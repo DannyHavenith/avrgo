@@ -19,7 +19,9 @@
 #include <boost/utility/enable_if.hpp>
 #include <boost/cstdint.hpp>
 
+#include "unpack_operand.hpp"
 #include "instruction.hpp"
+#include "avr_operand_types.hpp"
 
 namespace avrsim
 {
@@ -31,19 +33,52 @@ struct UNKNOWN_INSTRUCTION
 
 };
 
-template<typename instruction_tag>
+template< typename instruction, typename operand_list = typename operands< instruction, avr_operands>::type, unsigned int operand_count = mpl::size< operand_list>::type::value>
 struct operand_harvester
+{
+
+};
+
+
+template<typename instruction_tag, typename operand_list>
+struct operand_harvester<instruction_tag, operand_list, 0>
 {
     template< typename implementation>
     static void decode_and_execute( implementation &imp, uint16_t instruction)
     {
-        // todo: implement
-        imp.execute( instruction_tag(), instruction);
+        imp.execute( instruction_tag());
     }
 };
 
-template<>
-struct operand_harvester<UNKNOWN_INSTRUCTION>
+template<typename instruction_tag, typename operand_list>
+struct operand_harvester<instruction_tag, operand_list, 1>
+{
+    template< typename implementation>
+    static void decode_and_execute( implementation &imp, uint16_t instruction)
+    {
+        imp.execute(
+                instruction_tag(),
+                unpack< instruction_tag, boost::mpl::at_c<operand_list, 0>::type::value>( instruction)
+                );
+    }
+};
+
+template<typename instruction_tag, typename operand_list>
+struct operand_harvester<instruction_tag, operand_list, 2>
+{
+    template< typename implementation>
+    static void decode_and_execute( implementation &imp, uint16_t instruction)
+    {
+        imp.execute(
+                instruction_tag(),
+                unpack< instruction_tag, boost::mpl::at_c<operand_list, 0>::type::value>( instruction),
+                unpack< instruction_tag, boost::mpl::at_c<operand_list, 1>::type::value>( instruction)
+                );
+    }
+};
+
+
+struct unknown_instruction_caller
 {
     template< typename implementation>
     void decode_and_execute( implementation &imp, uint16_t instruction)
@@ -134,7 +169,7 @@ template<
     >
 struct find_decoder<implementation, instruction_set, 0>
 {
-    typedef operand_harvester<UNKNOWN_INSTRUCTION> type;
+    typedef unknown_instruction_caller type;
 };
 
 /// A decoder examines a single bit of an instruction and delegates further processing of the instruction

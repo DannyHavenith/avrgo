@@ -1,31 +1,26 @@
 /*
  * avr_instruction_set.hpp
  *
+ * List of AVR instructions with their associated bit patterns.
+ * Derived from a text file: AVR opcodes by Jeremy Brandon, as found
+ * on avrfreaks.
+ *
  *  Created on: Jul 25, 2011
  *      Author: danny
  */
 
 #ifndef AVR_INSTRUCTION_SET_HPP_
 #define AVR_INSTRUCTION_SET_HPP_
-#include <boost/mpl/list.hpp>
 #include <boost/mpl/joint_view.hpp>
 #include <boost/mpl/vector.hpp>
 #include "instruction.hpp"
+#include "avr_operand_types.hpp"
 
 namespace avrsim { namespace instructions {
 
-// the following constants are used to encode the different operand bits
-// in an instruction word. Their actual value does not matter, as long as
-// they're all different and are not 0 or 1.
-const int d = 2;
-const int r = 3;
-const int k = 4;
-const int q = 5;
-const int A = 6;
-const int s = 7;
-const int x = 8;
-const int b = 9;
-
+// below are the individual AVR instructions and their bit patterns.
+// note that these bit patterns are used by the instruction decoder and that
+// the decoder uses no other knowledge of AVR instruction bit patterns.
 struct NOP      : instruction< 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0> {};
 struct MOVW     : instruction< 0,0,0,0,0,0,0,1,d,d,d,d,r,r,r,r> {};
 struct MULS     : instruction< 0,0,0,0,0,0,1,0,d,d,d,d,r,r,r,r> {};
@@ -49,8 +44,6 @@ struct SBCI     : instruction< 0,1,0,0,k,k,k,k,d,d,d,d,k,k,k,k> {};
 struct SUBI     : instruction< 0,1,0,1,k,k,k,k,d,d,d,d,k,k,k,k> {};
 struct ORI 		: instruction< 0,1,1,0,k,k,k,k,d,d,d,d,k,k,k,k> {};
 struct ANDI 	: instruction< 0,1,1,1,k,k,k,k,d,d,d,d,k,k,k,k> {};
-//struct LD_Z 	: instruction< 1,0,0,0,0,0,0,d,d,d,d,d,0,0,0,0> {};
-//struct LD_Y 	: instruction< 1,0,0,0,0,0,0,d,d,d,d,d,1,0,0,0> {};
 struct LDD_Y    : instruction< 1,0,q,0,q,q,0,d,d,d,d,d,1,q,q,q> {};
 struct LDD_Z 	: instruction< 1,0,q,0,q,q,0,d,d,d,d,d,0,q,q,q> {};
 struct STD_Z 	: instruction< 1,0,q,0,q,q,1,d,d,d,d,d,0,q,q,q> {};
@@ -59,7 +52,6 @@ struct LDS 	    : instruction< 1,0,0,1,0,0,0,d,d,d,d,d,0,0,0,0> {};
 struct LD_Z_inc : instruction< 1,0,0,1,0,0,0,d,d,d,d,d,0,0,0,1> {};
 struct LD_Z_dec : instruction< 1,0,0,1,0,0,0,d,d,d,d,d,0,0,1,0> {};
 struct LD_Z_min : instruction< 1,0,0,1,0,0,0,d,d,d,d,d,0,0,1,1> {};
-//struct LD_Z_2   : instruction< 1,0,0,1,0,0,0,d,d,d,d,d,0,0,0,0> {};
 struct LPM_Z    : instruction< 1,0,0,1,0,0,0,d,d,d,d,d,0,1,0,0> {};
 struct LPM_Z_inc: instruction< 1,0,0,1,0,0,0,d,d,d,d,d,0,1,0,1> {};
 struct ELPM_Z   : instruction< 1,0,0,1,0,0,0,d,d,d,d,d,0,1,1,0> {};
@@ -74,7 +66,6 @@ struct LD_X_min : instruction< 1,0,0,1,0,0,0,d,d,d,d,d,1,1,1,1> {};
 struct LD_X     : instruction< 1,0,0,1,0,0,0,d,d,d,d,d,1,1,0,0> {};
 struct POP 		: instruction< 1,0,0,1,0,0,0,d,d,d,d,d,1,1,1,1> {};
 struct STS   	: instruction< 1,0,0,1,0,0,1,r,r,r,r,r,0,0,0,0> {};
-//struct ST_Z     : instruction< 1,0,0,1,0,0,1,r,r,r,r,r,0,0,0,0> {};
 struct ST_Z_inc : instruction< 1,0,0,1,0,0,1,r,r,r,r,r,0,0,0,1> {};
 struct ST_Z_dec : instruction< 1,0,0,1,0,0,1,r,r,r,r,r,0,0,1,0> {};
 struct ST_Z_min : instruction< 1,0,0,1,0,0,1,r,r,r,r,r,0,0,1,1> {};
@@ -159,8 +150,6 @@ typedef boost::mpl::vector<
         SUBI,
         ORI,
         ANDI,
- //       LD_Z,
- //       LD_Y,
         LDD_Z,
         LDD_Y,
         STD_Z,
@@ -169,7 +158,6 @@ typedef boost::mpl::vector<
         LD_Z_inc,
         LD_Z_dec,
         LD_Z_min,
- //       LD_Z_2,
         LPM_Z,
         ELPM_Z,
         LD_Y_inc,
@@ -181,7 +169,7 @@ typedef boost::mpl::vector<
         STS,
         ST_Z_inc,
         ST_Z_dec,
-        ST_Z_min//,        ST_Z
+        ST_Z_min
         > list1;
 
 typedef boost::mpl::vector<
