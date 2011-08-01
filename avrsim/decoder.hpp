@@ -33,7 +33,7 @@ struct UNKNOWN_INSTRUCTION
 
 };
 
-template< typename instruction, typename operand_list = typename operands< instruction, avr_operands>::type, unsigned int operand_count = mpl::size< operand_list>::type::value>
+template< typename instruction, typename operand_list = typename operands< instruction, instructions::avr_operands>::type, unsigned int operand_count = mpl::size< operand_list>::type::value>
 struct operand_harvester
 {
 

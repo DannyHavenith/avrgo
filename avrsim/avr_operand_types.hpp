@@ -9,7 +9,7 @@
 #define AVR_OPERAND_TYPES_HPP_
 #include <boost/mpl/vector_c.hpp>
 namespace avrsim {
-
+namespace instructions {
 // the operand codes are used to encode the different operand bits
 // in an instruction word. Their actual value does not matter, as long as
 // they're all different and are not 0 or 1.
@@ -24,6 +24,7 @@ const int b = 9;
 
 /// sorted list of possible AVR operands.
 typedef boost::mpl::vector_c< int, d, r, k, q, A, s, b, x> avr_operands;
+}
 }
 
 
