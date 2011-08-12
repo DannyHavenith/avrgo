@@ -19,7 +19,7 @@ using boost::uint16_t;
 //#include <boost/fusion/adapted/mpl.hpp>
 //#include <boost/fusion/include/mpl.hpp>
 
-struct simple_implementation
+struct simple_disassembler
 {
     template<typename tag>
     void execute( const tag &)
@@ -45,8 +45,8 @@ void decode_and_execute( boost::uint16_t word)
 {
     using namespace avrsim;
     using namespace avrsim::instructions;
-    simple_implementation impl;
-    typedef typename find_decoder<simple_implementation, avrsim::instructions::list>::type decoder;
+    simple_disassembler impl;
+    typedef typename find_decoder<simple_disassembler, avrsim::instructions::list>::type decoder;
     decoder::decode_and_execute( impl, word);
 }
 
