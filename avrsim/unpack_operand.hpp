@@ -241,7 +241,7 @@ struct unpack< instructions, typename boost::enable_if< typename boost::mpl::emp
  * means that at that position an operand is encoded in the instruction word. Operands can be scattered throughout
  * the instruction word. Notice for instance how in the following instruction the offset bits ('q') are placed:
  *     struct LDD_Y    : instruction< 1,0,q,0,q,q,0,d,d,d,d,d,1,q,q,q> {};
- * 'q' is here an integer number higher than 1 and different than the integer for 'd'.
+ * 'q' is here an integer number higher than 1 and different from the integer for 'd'.
  * In this example, the unpack function, if given the LDD_Y instruction and the operand_code q, will
  * return the operand in the form 0000000000qqqqqq, i.e. a 6-bit (unsigned) integer.
  */
