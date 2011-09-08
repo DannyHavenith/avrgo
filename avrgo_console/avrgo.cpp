@@ -19,6 +19,11 @@ using boost::uint16_t;
 //#include <boost/fusion/adapted/mpl.hpp>
 //#include <boost/fusion/include/mpl.hpp>
 
+/**
+ * Simple disassembler class.
+ *
+ * This class, when given an instruction word to 'execute', will print the instruction mnemonic and operands to std::cout.
+ */
 struct simple_disassembler
 {
     template<typename tag>
@@ -44,12 +49,15 @@ struct simple_disassembler
 void decode_and_execute( boost::uint16_t word)
 {
     using namespace avrsim;
-    using namespace avrsim::instructions;
     simple_disassembler impl;
     typedef typename find_decoder<simple_disassembler, avrsim::instructions::list>::type decoder;
     decoder::decode_and_execute( impl, word);
 }
 
+/**
+ * This class prints a single unpacking instruction and can be used with fusions for_each to print a list of
+ * unpacking isntructions.
+ */
 struct unpack_printer
 {
     template<int times>

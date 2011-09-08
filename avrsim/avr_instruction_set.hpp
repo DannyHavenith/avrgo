@@ -59,7 +59,7 @@ struct ELPM_Z_inc:instruction< 1,0,0,1,0,0,0,d,d,d,d,d,0,1,1,1> {};
 struct LD_Y_inc : instruction< 1,0,0,1,0,0,0,d,d,d,d,d,1,0,0,1> {};
 struct LD_Y_dec : instruction< 1,0,0,1,0,0,0,d,d,d,d,d,1,0,1,0> {};
 struct LD_Y_min : instruction< 1,0,0,1,0,0,0,d,d,d,d,d,1,0,1,1> {};
-struct LD_Y_2   : instruction< 1,0,0,1,0,0,0,d,d,d,d,d,1,0,0,0> {};
+struct LD_Y     : instruction< 1,0,0,1,0,0,0,d,d,d,d,d,1,0,0,0> {};
 struct LD_X_inc : instruction< 1,0,0,1,0,0,0,d,d,d,d,d,1,1,0,1> {};
 struct LD_X_dec : instruction< 1,0,0,1,0,0,0,d,d,d,d,d,1,1,1,0> {};
 struct LD_X_min : instruction< 1,0,0,1,0,0,0,d,d,d,d,d,1,1,1,1> {};
@@ -124,6 +124,9 @@ struct BST 		: instruction< 1,1,1,1,1,0,1,d,d,d,d,d,0,b,b,b> {};
 struct SBRC 	: instruction< 1,1,1,1,1,1,0,r,r,r,r,r,0,b,b,b> {};
 struct SBRS  	: instruction< 1,1,1,1,1,1,1,r,r,r,r,r,0,b,b,b> {};
 
+// extra instruction tags, for instructions that require an extra word
+struct LDS_direct {};
+struct STS_direct {};
 
 // create a list that enumerates all avr instructions
 typedef boost::mpl::vector<
@@ -163,7 +166,7 @@ typedef boost::mpl::vector<
         LD_Y_inc,
         LD_Y_dec,
         LD_Y_min,
-        LD_Y_2,
+        LD_Y,
         LD_X,
         POP,
         STS,

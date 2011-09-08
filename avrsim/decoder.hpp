@@ -33,6 +33,10 @@ struct UNKNOWN_INSTRUCTION
 
 };
 
+/**
+ * Special case of the instruction decoder that already knows the instruction, but now extracts operands from the instruction word and
+ * calls the correct member function on an implementation.
+ */
 template< typename instruction, typename operand_list = typename operands< instruction, instructions::avr_operands>::type, unsigned int operand_count = mpl::size< operand_list>::type::value>
 struct operand_harvester
 {
@@ -40,6 +44,9 @@ struct operand_harvester
 };
 
 
+/**
+ * Specialization of the operand_harvester class for instructions with zero operands.
+ */
 template<typename instruction_tag, typename operand_list>
 struct operand_harvester<instruction_tag, operand_list, 0>
 {
@@ -50,6 +57,9 @@ struct operand_harvester<instruction_tag, operand_list, 0>
     }
 };
 
+/**
+ * Specialization of the operand_harvester class for instructions with one operand.
+ */
 template<typename instruction_tag, typename operand_list>
 struct operand_harvester<instruction_tag, operand_list, 1>
 {
@@ -63,6 +73,8 @@ struct operand_harvester<instruction_tag, operand_list, 1>
     }
 };
 
+/**
+ */
 template<typename instruction_tag, typename operand_list>
 struct operand_harvester<instruction_tag, operand_list, 2>
 {
@@ -77,7 +89,9 @@ struct operand_harvester<instruction_tag, operand_list, 2>
     }
 };
 
-
+/**
+ * Special case of an instruction decoder that ignores the instruction word and calls the 'unknown instruction' implementation.
+ */
 struct unknown_instruction_caller
 {
     template< typename implementation>
@@ -149,6 +163,8 @@ struct find_decoder
     typedef decoder< implementation, zeros, ones, discriminator_bit::value> type;
 };
 
+/// Specialization of the find_decoder meta function for when the instruction set contains one instruction only.
+///
 /// When the instruction set contains only one item, we don't really need to decode
 /// anymore, so we return a class that will harvest the operands from the instruction word and
 /// that calls the implementation.
@@ -162,7 +178,10 @@ struct find_decoder<implementation, instruction_set, 1>
     typedef operand_harvester<instruction_tag> type;
 };
 
+/// Specialization of the find_decoder meta function for zero-sized instruction set.
+///
 /// Something's gone wrong if we end up with an empty instruction set, because now we don't know what function to call.
+/// We can't do anything else but return a decoder that emits a call to the unknown instruction function.
 template<
     typename implementation,
     typename instruction_set
@@ -172,6 +191,8 @@ struct find_decoder<implementation, instruction_set, 0>
     typedef unknown_instruction_caller type;
 };
 
+/// Default single-bit decoder.
+///
 /// A decoder examines a single bit of an instruction and delegates further processing of the instruction
 /// to the next decoder.
 template<
