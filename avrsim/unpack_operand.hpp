@@ -22,7 +22,7 @@
 #include <utility> // for std::pair and std::make_pair
 #include <boost/mpl/vector.hpp>
 #include <boost/mpl/int.hpp>
-#include <boost/mpl/pop_front.hpp>b
+#include <boost/mpl/pop_front.hpp>
 #include <boost/mpl/push_front.hpp>
 #include <boost/mpl/front.hpp>
 #include <boost/mpl/empty.hpp>
@@ -94,7 +94,7 @@ struct unpacking_builder
         typedef list_so_far instructions;
     };
 
-    typedef searching_state< boost::mpl::vector0<>, 0> start_state;
+    typedef searching_state< boost::mpl::vector0<>, 0, 0> start_state;
 
     template< typename list_so_far, int shift_count, int bit_count, int position>
     struct island_state
@@ -141,7 +141,7 @@ struct unpacking_builder
      */
     template< typename list, int shift_count, int bit_count, int position, typename next_bit>
     struct apply<
-        island_state< list, shift_count, position, bit_count>,
+        island_state< list, shift_count, bit_count, position>,
         next_bit,
         typename boost::enable_if_c< next_bit::value == operand_code>::type >
     {
@@ -191,7 +191,7 @@ template< typename instructions, typename enable = void>
 struct unpack
 {
     typedef typename boost::mpl::front< instructions>::type first_instruction;
-    typedef typename boost::mpl::pop_front<instruction_vector>::type remaining_instructions;
+    typedef typename boost::mpl::pop_front<instructions>::type remaining_instructions;
 
     static unpack_state execute( unpack_state input)
     {
@@ -201,8 +201,8 @@ struct unpack
     }
 };
 
-template< typename instructions, int position>
-struct unpack< instructions, position, typename boost::enable_if< typename boost::mpl::empty<instructions>::type>::type >
+template< typename instructions>
+struct unpack< instructions, typename boost::enable_if< typename boost::mpl::empty<instructions>::type>::type >
 {
     static unpack_state execute( unpack_state input)
     {

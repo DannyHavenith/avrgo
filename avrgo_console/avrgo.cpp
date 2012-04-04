@@ -14,10 +14,10 @@
 #include "avrsim/decoder.hpp"
 #include "avrsim/instruction_names.hpp"
 using boost::uint16_t;
-//#include <boost/fusion/algorithm/iteration/for_each.hpp>
-//#include <boost/fusion/include/for_each.hpp>
-//#include <boost/fusion/adapted/mpl.hpp>
-//#include <boost/fusion/include/mpl.hpp>
+#include <boost/fusion/algorithm/iteration/for_each.hpp>
+#include <boost/fusion/include/for_each.hpp>
+#include <boost/fusion/adapted/mpl.hpp>
+#include <boost/fusion/include/mpl.hpp>
 
 struct simple_disassembler
 {
@@ -50,31 +50,28 @@ void decode_and_execute( boost::uint16_t word)
     decoder::decode_and_execute( impl, word);
 }
 
+
 struct unpack_printer
 {
-    template<int times>
-    void operator()( const avrsim::unpacking::shift<times> &) const
+    template<int shift_count, int bit_count, int position>
+    void operator()( const avrsim::unpacking::shift_and_mask< shift_count, bit_count, position> &) const
     {
-        std::cout << "shift " << times << "\n";
+        std::cout << "shift " << shift_count << ", mask pos=" << position << " maks bits=" << bit_count << '\n';
     }
 
-    template<int bits, int offset>
-    void operator()(const avrsim::unpacking::mask<bits, offset> &) const
-    {
-        std::cout << "mask " << bits << " " << offset << "\n";
-    }
 };
+
 
 int main(int argc, char *argv[])
 {
 
-   decode_and_execute( 256 + 16 + 2);
+   decode_and_execute( 256 + 32 + 2);
    decode_and_execute( 0);
    decode_and_execute( 43356);
 
-//    typedef typename avrsim::unpacking::unpack_instructions<avrsim::instructions::LDD_Y, avrsim::q>::type instructions;
+    typedef typename avrsim::unpacking::unpack_instructions<avrsim::instructions::MOVW, avrsim::instructions::r>::type instructions;
 //
-//    boost::fusion::for_each( instructions(), unpack_printer());
+    boost::fusion::for_each( instructions(), unpack_printer());
 
     return 0;
 }
