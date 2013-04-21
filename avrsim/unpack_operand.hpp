@@ -5,7 +5,7 @@
  *      Author: danny
  */
 
-/*!
+/**
  * This file contains meta functions that create code to extract an operand from an instruction word.
  * AVR operands can be quite scattered around in the instruction word, so sometimes several bits must be
  * gathered and compacted into a single integer value.
@@ -33,7 +33,7 @@
 
 namespace avrsim {
 
-/*!
+/**
  * This namespace contains types that represent unpacking instructions.
  * Unpacking an operand consists of a series of shifts and applying masks.
  */
@@ -44,70 +44,28 @@ namespace unpacking {
 /// the second contains the operand accumulator, which will receive the operand bits.
 typedef std::pair<uint16_t,uint16_t> unpack_state;
 
-/// quick-and-dirty implementation of a power-of-two template.
-template<unsigned int power>
-struct power2
-{
-    static const unsigned int value = power2<power - 1>::value * 2;
-};
+/// This type represents a sequence of bits in an instruction word.
+/// The boolean template argument use_bits is true if it is a sequence of bits that we want.
+/// This type is used to determine which bits should be combined to get a specific operand from
+/// an instruction word.
+template< int bitcount, bool use_bits>
+struct bits {};
 
-template<>
-struct power2<0>
-{
-    static const unsigned int value = 1;
-};
 
-/// this is the instruction to shift-right the instruction word a number of bits
-template<int times>
-struct shift
-{
-    static unpack_state execute( unpack_state state)
-    {
-        return std::make_pair( state.first >> times, state.second);
-    }
-
-    static const bool is_shift = true;
-};
-
-/// this is the instruction to transfer a number of bits at a given offset
-/// from the instruction word to the operand accumulator.
-template<int mask_bits, int mask_offset>
-struct mask
-{
-    static const int bits = mask_bits;
-    static const int offset = mask_offset;
-    static const unsigned int value = (power2<bits>::value - 1) << offset;
-    static unpack_state execute( unpack_state state)
-    {
-        return std::make_pair( state.first, state.second |(state.first & value));
-    }
-    static const bool is_shift = false;
-};
-
-template< typename T>
-struct increase
-{
-
-};
-
-template< int amount>
-struct increase< shift<amount> >
-{
-    typedef shift<amount + 1> type;
-};
-
-template< int bits, int offset>
-struct increase< mask<bits, offset> >
-{
-    typedef mask< bits + 1, offset> type;
-};
-
-/// unpacking builder creates unpacking instructions.
-/// This class is given as an operator to the mpl::fold meta function
+/// This class is given as a lambda function to the mpl::fold meta function. Given an
+/// operand code, when fed instruction code bits one-by-one, this class will build up state
+/// which consists of a list of alternating bits< a, false>, bits<b, true>, bits<c, false>, etc...
+/// These bits<x, b> elements represent sequences of x bits that are either part of the given operand (b=true)
+/// or not (b=false).
+/// the list of bits<x,b> instances will be in reverse order (describing the bits "from right to left").
+///
+/// For example, for an operand code q, if fed the bit-sequence 0,1,q,q,q,q,q,1,0,q,q the final state will consist of
+/// bits<2,true>, bits<2, false>, bits<5, true>, bits<2, false>
+///
 template< int operand_code>
-struct unpacking_builder
+struct run_length_encoder
 {
-    /*!
+    /**
      * The state to maintain while folding the instruction mask.
      * current_list is the current list of unpacking instructions
      * current_instruction is the current instruction, which could be expanded.
@@ -115,99 +73,100 @@ struct unpacking_builder
      */
     template<
         typename current_list = boost::mpl::vector<>,
-        typename current_instruction = shift<0>,
-        unsigned int current_offset = 0 >
+        typename current_bits = bits< 0, false>
+        >
     struct state
     {
-        typedef current_list instructions;
-        typedef current_instruction instruction;
-        static const int offset = current_offset;
+        typedef current_list bits_list;
+        typedef current_bits bits;
     };
 
-    /*!
+    /**
      * The apply meta function accepts a current state and a type representing the next bit. It will return the
      * new state.
      */
     template< typename state, typename next_bit, typename enable = void>
     struct apply { };
 
-    /*!
+    /**
      * If we're in the masking state and we encounter a bit that is not part of the operand, we finish
      * our masking instruction (push it to the list of instructions) and start a shift instruction.
      */
-    template< typename list, typename next_bit, int mask_bits, int mask_offset, int offset>
+    template< typename list, int bit_count, typename next_bit>
     struct apply<
-        state< list, mask<mask_bits, mask_offset>, offset >,
+        state< list, bits<bit_count, true> >,
         next_bit,
-        typename boost::disable_if_c<next_bit::value == operand_code>::type >
+        typename boost::enable_if_c<next_bit::value != operand_code>::type >
     {
-        typedef state< boost::mpl::push_front< list, mask< mask_bits, mask_offset> >, shift<1>, mask_offset + mask_bits> type;
+        typedef state<
+                typename boost::mpl::push_front< list, bits<bit_count, true> >::type,
+                bits<1, false>
+                > type;
     };
 
-    /*!
+    /**
      * If we're in the masking state and we encounter another operand bit, we extend the mask to include this bit.
      */
-    template< typename current_state, typename next_bit>
+    template< typename list, int bit_count, typename next_bit>
     struct apply<
-        current_state,
+        state< list, bits<bit_count, true> >,
         next_bit,
-        typename boost::enable_if_c<
-            next_bit::value != operand_code && !current_state::instruction::is_shift>::type
+        typename boost::enable_if_c< next_bit::value == operand_code >::type
     >
     {
         typedef state<
-                typename boost::mpl::push_front< typename current_state::instructions, typename current_state::instruction>::type,
-                shift<1>,
-                current_state::instruction::bits + current_state::instruction::offset> type;
+                list,
+                bits<bit_count+1, true>
+        > type;
     };
 
-    /*!
+    /**
      * If we're in the shifting state and we encounter another bit that is not part of the operand,
      * we increase the shift amount.
      */
-    template< typename current_state, typename next_bit>
+    template< typename list, int bit_count, typename next_bit>
     struct apply<
-        current_state,
+        state< list, bits< bit_count, false> >,
         next_bit,
         typename boost::enable_if_c<
-            (next_bit::value != operand_code && current_state::instruction::is_shift)
-            || (next_bit::value == operand_code && !current_state::instruction::is_shift)>::type
+            next_bit::value != operand_code
+            >::type
     >
     {
         typedef state<
-                typename current_state::instructions,
-                typename increase< typename current_state::instruction>::type,
-                current_state::offset> type;
+                list,
+                bits< bit_count + 1, false>
+        > type;
     };
 
-    /*!
+    /**
      * If we encounter an operand bit while we where in the shifting state, we stop shifting and start
      * a masking instruction.
      */
-    template< typename current_state, typename next_bit>
+    template< typename list, int bit_count, typename next_bit>
     struct apply<
-        current_state,
+        state< list, bits< bit_count, false> >,
         next_bit,
-        typename boost::enable_if_c< next_bit::value == operand_code && current_state::instruction::is_shift>::type
+        typename boost::enable_if_c< next_bit::value == operand_code>::type
     >
     {
         typedef state<
-                typename boost::mpl::push_front< typename current_state::instructions, typename current_state::instruction >::type,
-                mask< 1, current_state::offset>,
-                current_state::offset> type;
+                typename boost::mpl::push_front< list, bits< bit_count, false> >::type,
+                bits< 1, true>
+        > type;
     };
 
 };
 
-/*!
+/**
  * Meta-function that constructs an mpl::vector of unpacking instructions for a given
  * instruction and a given operand code.
  */
 template< typename instruction, int operand_code>
 struct unpack_instructions
 {
-    typedef typename mpl::fold< instruction, typename unpacking_builder<operand_code>::template state<>, unpacking_builder<operand_code> >::type fold_result;
-    typedef typename mpl::push_front< typename fold_result::instructions, typename fold_result::instruction>::type type;
+    typedef typename mpl::fold< instruction, typename run_length_encoder<operand_code>::template state<>, run_length_encoder<operand_code> >::type fold_result;
+    typedef typename mpl::push_front< typename fold_result::bits_list, typename fold_result::bits>::type type;
 };
 
 
@@ -235,7 +194,7 @@ struct unpack< instructions, typename boost::enable_if< typename boost::mpl::emp
 };
 }
 
-/*!
+/**
  * Unpack an operand from an instruction word.
  * The instruction type is a sequence of 0s, 1s and higher integer values. Each higher integer value
  * means that at that position an operand is encoded in the instruction word. Operands can be scattered throughout
@@ -249,7 +208,8 @@ template< typename instruction, int operand_code>
 uint16_t unpack( uint16_t word)
 {
     typedef typename unpacking::unpack_instructions< instruction, operand_code>::type instructions;
-    return unpacking::unpack< instructions>::execute( std::make_pair( word, 0)).second;
+    //return unpacking::unpack< instructions>::execute( std::make_pair( word, 0)).second;
+    return word;
 }
 
 }

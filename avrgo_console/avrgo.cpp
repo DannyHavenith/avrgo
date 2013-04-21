@@ -14,10 +14,10 @@
 #include "avrsim/decoder.hpp"
 #include "avrsim/instruction_names.hpp"
 using boost::uint16_t;
-//#include <boost/fusion/algorithm/iteration/for_each.hpp>
-//#include <boost/fusion/include/for_each.hpp>
-//#include <boost/fusion/adapted/mpl.hpp>
-//#include <boost/fusion/include/mpl.hpp>
+#include <boost/fusion/algorithm/iteration/for_each.hpp>
+#include <boost/fusion/include/for_each.hpp>
+#include <boost/fusion/adapted/mpl.hpp>
+#include <boost/fusion/include/mpl.hpp>
 
 /**
  * Simple disassembler class.
@@ -50,7 +50,7 @@ void decode_and_execute( boost::uint16_t word)
 {
     using namespace avrsim;
     simple_disassembler impl;
-    typedef typename find_decoder<simple_disassembler, avrsim::instructions::list>::type decoder;
+    typedef  find_decoder<simple_disassembler, avrsim::instructions::list>::type decoder;
     decoder::decode_and_execute( impl, word);
 }
 
@@ -61,15 +61,15 @@ void decode_and_execute( boost::uint16_t word)
 struct unpack_printer
 {
     template<int times>
-    void operator()( const avrsim::unpacking::shift<times> &) const
+    void operator()( const avrsim::unpacking::bits<times, false> &) const
     {
         std::cout << "shift " << times << "\n";
     }
 
-    template<int bits, int offset>
-    void operator()(const avrsim::unpacking::mask<bits, offset> &) const
+    template<int times>
+    void operator()(const avrsim::unpacking::bits<times, true> &) const
     {
-        std::cout << "mask " << bits << " " << offset << "\n";
+        std::cout << "mask " << times << "\n";
     }
 };
 
@@ -80,9 +80,9 @@ int main(int argc, char *argv[])
    decode_and_execute( 0);
    decode_and_execute( 43356);
 
-//    typedef typename avrsim::unpacking::unpack_instructions<avrsim::instructions::LDD_Y, avrsim::q>::type instructions;
+    typedef typename avrsim::unpacking::unpack_instructions<avrsim::instructions::LDD_Y, avrsim::instructions::q>::type instructions;
 //
-//    boost::fusion::for_each( instructions(), unpack_printer());
+    boost::fusion::for_each( instructions(), unpack_printer());
 
     return 0;
 }
