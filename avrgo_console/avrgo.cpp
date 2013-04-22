@@ -56,7 +56,7 @@ void decode_and_execute( boost::uint16_t word)
 
 /**
  * This class prints a single unpacking instruction and can be used with fusions for_each to print a list of
- * unpacking isntructions.
+ * unpacking instructions.
  */
 struct unpack_printer
 {
@@ -76,11 +76,14 @@ struct unpack_printer
 int main(int argc, char *argv[])
 {
 
+    volatile uint16_t instruction = 256 + 16 + 2;
    decode_and_execute( 256 + 16 + 2);
    decode_and_execute( 0);
    decode_and_execute( 43356);
 
-    typedef typename avrsim::unpacking::unpack_instructions<avrsim::instructions::LDD_Y, avrsim::instructions::q>::type instructions;
+
+
+    typedef avrsim::unpacking::unpack_instructions<avrsim::instructions::LDD_Y, avrsim::instructions::q>::type instructions;
 //
     boost::fusion::for_each( instructions(), unpack_printer());
 

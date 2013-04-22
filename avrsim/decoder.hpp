@@ -195,6 +195,8 @@ struct find_decoder<implementation, instruction_set, 0>
 ///
 /// A decoder examines a single bit of an instruction and delegates further processing of the instruction
 /// to the next decoder.
+/// The template arguments instructions_with_zero_at_position and instructionw_with_one_at_position together
+/// contain the complete instruction set that this decoder can decode.
 template<
     typename implementation,
     typename instructions_with_zero_at_position,

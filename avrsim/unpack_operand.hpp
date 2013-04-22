@@ -23,7 +23,7 @@
 #include <boost/mpl/vector.hpp>
 #include <boost/mpl/int.hpp>
 #include <boost/mpl/pop_front.hpp>
-#include <boost/mpl/push_front.hpp>
+#include <boost/mpl/push_back.hpp>
 #include <boost/mpl/front.hpp>
 #include <boost/mpl/empty.hpp>
 #include <boost/mpl/back_inserter.hpp>
@@ -99,7 +99,7 @@ struct run_length_encoder
         typename boost::enable_if_c<next_bit::value != operand_code>::type >
     {
         typedef state<
-                typename boost::mpl::push_front< list, bits<bit_count, true> >::type,
+                typename boost::mpl::push_back< list, bits<bit_count, true> >::type,
                 bits<1, false>
                 > type;
     };
@@ -151,7 +151,7 @@ struct run_length_encoder
     >
     {
         typedef state<
-                typename boost::mpl::push_front< list, bits< bit_count, false> >::type,
+                typename boost::mpl::push_back< list, bits< bit_count, false> >::type,
                 bits< 1, true>
         > type;
     };
@@ -166,32 +166,50 @@ template< typename instruction, int operand_code>
 struct unpack_instructions
 {
     typedef typename mpl::fold< instruction, typename run_length_encoder<operand_code>::template state<>, run_length_encoder<operand_code> >::type fold_result;
-    typedef typename mpl::push_front< typename fold_result::bits_list, typename fold_result::bits>::type type;
+    typedef typename mpl::push_back< typename fold_result::bits_list, typename fold_result::bits>::type type;
 };
 
-
-template< typename instructions, typename enable = void>
-struct unpack
+template< int bitpos, typename instruction_list, int size = boost::mpl::size< instruction_list>::type::value>
+struct unpacker
 {
-    static unpack_state execute( unpack_state input)
+
+    typedef typename boost::mpl::front< instruction_list>::type first_instruction;
+    typedef typename boost::mpl::pop_front< instruction_list>::type rest;
+
+    static void unpack( uint16_t &instruction, uint16_t &operand)
     {
-        typedef typename boost::mpl::copy< instructions, boost::mpl::back_inserter< boost::mpl::vector<> > >::type
-                instruction_vector;
-        typedef typename boost::mpl::front< instruction_vector>::type last_instruction;
-        return last_instruction::execute(
-                    unpack< typename boost::mpl::pop_front<instruction_vector>::type>::execute( input)
-                );
+        do_unpack( first_instruction(), instruction, operand);
+    }
+
+private:
+    template< int bitcount>
+    static void do_unpack( const bits<bitcount, true> &, uint16_t &instruction, uint16_t &operand)
+    {
+        operand |= instruction & (((1<<bitcount)-1) << bitpos);
+        unpacker<bitpos + bitcount, rest>::unpack( instruction, operand);
+    }
+
+    template< int bitcount>
+    static void do_unpack( const bits<bitcount, false> &, uint16_t &instruction, uint16_t &operand)
+    {
+        instruction >>= bitcount;
+        unpacker<bitpos, rest>::unpack( instruction, operand);
     }
 };
 
-template< typename instructions>
-struct unpack< instructions, typename boost::enable_if< typename boost::mpl::empty<instructions>::type>::type >
+/**
+ * Specialization for empty instructions lists. This specialization does nothing in its unpack function,
+ * thus ending recursion.
+ */
+template< int bitpos, typename instruction_list>
+struct unpacker<bitpos, instruction_list, 0>
 {
-    static unpack_state execute( unpack_state input)
+    static void unpack( uint16_t &, uint16_t &)
     {
-        return input;
+        // doing nothing.
     }
 };
+
 }
 
 /**
@@ -207,9 +225,10 @@ struct unpack< instructions, typename boost::enable_if< typename boost::mpl::emp
 template< typename instruction, int operand_code>
 uint16_t unpack( uint16_t word)
 {
+    uint16_t result = 0;
     typedef typename unpacking::unpack_instructions< instruction, operand_code>::type instructions;
-    //return unpacking::unpack< instructions>::execute( std::make_pair( word, 0)).second;
-    return word;
+    unpacking::unpacker< 0, instructions>::unpack( word, result);
+    return result;
 }
 
 }
