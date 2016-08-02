@@ -5,16 +5,19 @@
 ##          http://www.boost.org/LICENSE_1_0.txt)
 
 
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8.0)
+set(CMAKE_CXX_STANDARD 11)
+SET(CMAKE_CXX_FLAGS "-std=c++11")
 
 project(avrgo)
 add_definitions(-D_SCL_SECURE_NO_WARNINGS)
 
 SET(Boost_USE_STATIC_LIBS OFF)
 SET(Boost_USE_MULTITHREAD ON)
-FIND_PACKAGE( Boost COMPONENTS python serialization system)
+FIND_PACKAGE( Boost)
 
 include_directories( ${avrgo_SOURCE_DIR})
+include_directories( ${Boost_INCLUDE_DIR})
 
 add_subdirectory (avrsim)
 add_subdirectory (avrgo_console)

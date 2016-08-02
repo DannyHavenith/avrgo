@@ -8,6 +8,8 @@ add_library(
 	avrsim 
 	
 	avrsim.cpp
+    list_parser.cpp
+
 	avr_instruction_set.hpp
 	decoder.hpp
 	instruction.hpp

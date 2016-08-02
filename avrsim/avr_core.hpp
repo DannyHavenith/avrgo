@@ -45,11 +45,11 @@ struct avr_state
     typedef boost::uint8_t register_t;
     typedef boost::uint32_t pointer_t;
 
-    flags_t         flags;
-    register_t      r[32];
-    boost::uint64_t clock_ticks;
-    pointer_t       pc;
-    pointer_t       sp;
+    flags_t         flags{};
+    register_t      r[32]{};
+    boost::uint64_t clock_ticks{};
+    pointer_t       pc{};
+    pointer_t       sp{};
     std::vector<register_t>    ram;
     std::vector<instruction_t> rom;
 };
@@ -71,18 +71,20 @@ struct avr_core_utils
  * Each overload takes the instruction tag as its first argument and then, depending on the
  * instruction, takes zero, one or two extra arguments.
  */
-class avr_core : avr_state, avr_core_utils
+class avr_core : public avr_state, avr_core_utils
 {
 public:
 
+    using avr_state::avr_state;
     typedef boost::int16_t  signed16;
     typedef boost::uint16_t unsigned16;
     typedef boost::int8_t   signed8;
     typedef boost::uint8_t  unsigned8;
     typedef boost::uint16_t operand;
-    static const int register_X = 26;
-    static const int register_Y = 28;
-    static const int register_Z = 30;
+    static constexpr int register_X = 26;
+    static constexpr int register_Y = 28;
+    static constexpr int register_Z = 30;
+    static constexpr int io_offset = 0x20;
 
     // the following functions should become part of
     // a ram-model aspect.
@@ -105,6 +107,21 @@ public:
     pointer_t get_rampy_offset() const
     {
         return 0;
+    }
+
+    register_t &get_io_address( uint16_t address)
+    {
+        return ram[address + io_offset];
+    }
+
+    void set_io( operand address, register_t value)
+    {
+        get_io_address( address) = value;
+    }
+
+    register_t get_io( operand address)
+    {
+        return get_io_address( address);
     }
 
     void assign16( operand reg, boost::int16_t value)
@@ -637,7 +654,7 @@ public:
         flags.V = r[dest] == 0x7f;
     }
 
-    flags_t &number_to_flag( operand bit)
+    flags_t::flag_t &number_to_flag( operand bit)
     {
         switch (bit)
         {
@@ -669,6 +686,7 @@ public:
         extra_clocktick();
     }
 
+    /// TODO
     pointer_t get_eind_offset()
     {
         return 0;
@@ -745,83 +763,100 @@ public:
     {
     }
 
-    void execute( JMP)
+    int16_t sign_extend12( operand input)
+    {
+        return (( static_cast<int16_t>(input) + 0x0800) & 0x0FFF) - 0x0800;
+    }
+
+    void execute( JMP, operand upper_bits)
+    {
+        pc = fetch_instruction_word() + static_cast<pointer_t>( upper_bits) << 16;
+        extra_clockticks(2);
+    }
+
+    void execute( CALL, operand upper_bits)
+    {
+        push_address( pc);
+        pc = fetch_instruction_word() + static_cast<pointer_t>( upper_bits) << 16;
+        extra_clockticks(3);
+    }
+
+    void execute( ADIW, operand, operand)
     {
     }
 
-    void execute( CALL)
+    void execute( SBIW, operand, operand)
     {
     }
 
-    void execute( ADIW)
+    void execute( CBI, operand, operand)
     {
     }
 
-    void execute( SBIW)
+    void execute( SBIC, operand, operand)
     {
     }
 
-    void execute( CBI)
+    void execute( SBI, operand, operand)
     {
     }
 
-    void execute( SBIC)
+    void execute( SBIS, operand, operand)
     {
     }
 
-    void execute( SBI)
+    void execute( MUL, operand, operand)
     {
     }
 
-    void execute( SBIS)
+    void execute( IN, operand dest, operand io_address)
+    {
+        r[dest] = get_io( io_address);
+    }
+
+    void execute( OUT, operand ioaddr, operand source)
+    {
+        set_io( ioaddr, r[source]);
+    }
+
+    void execute( RJMP, operand offset)
+    {
+        pc += sign_extend12( offset);
+        extra_clocktick();
+    }
+
+    void execute( RCALL, operand offset)
+    {
+        push_address( pc);
+        pc += sign_extend12( offset);
+    }
+
+    void execute( LDI, operand dest, operand constant)
+    {
+        r[dest] = constant;
+    }
+
+    void execute( BRBS, operand, operand)
     {
     }
 
-    void execute( MUL)
+    void execute( BRBC, operand, operand)
     {
     }
 
-    void execute( IN)
+    void execute( BLD, operand, operand)
     {
     }
 
-    void execute( OUT)
+    void execute( BST, operand, operand)
     {
     }
 
-    void execute( RJMP)
+    void execute( SBRC, operand, operand)
     {
     }
 
-    void execute( RCALL)
-    {
-    }
-
-    void execute( LDI)
-    {
-    }
-
-    void execute( BRBS)
-    {
-    }
-
-    void execute( BRBC)
-    {
-    }
-
-    void execute( BLD)
-    {
-    }
-
-    void execute( BST)
-    {
-    }
-
-    void execute( SBRC)
-    {
-    }
-
-    void execute( SBRS)
+    void execute( SBRS, operand, operand)
     {
     }
 private:

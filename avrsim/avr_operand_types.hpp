@@ -22,7 +22,9 @@ const int s = 7;
 const int x = 8;
 const int b = 9;
 
-/// sorted list of possible AVR operands.
+/// Sorted list of possible AVR operands.
+/// The order of operands in this list also determines the order of operand
+/// arguments to the execute() methods.
 typedef boost::mpl::vector_c< int, d, r, k, q, A, s, b, x> avr_operands;
 }
 }

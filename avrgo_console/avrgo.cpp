@@ -1,3 +1,5 @@
+#include <iosfwd>
+
 /*
  * avrgo.cpp
  *
@@ -8,11 +10,15 @@
 #define BOOST_MPL_LIMIT_VECTOR_SIZE 50
 
 #include <iostream>
+#include <fstream>
 #include <typeinfo>
 #include <boost/cstdint.hpp>
 #include "avrsim/avr_instruction_set.hpp"
 #include "avrsim/decoder.hpp"
+#include "avrsim/avr_core.hpp"
 #include "avrsim/instruction_names.hpp"
+#include "avrsim/list_parser.hpp"
+
 using boost::uint16_t;
 #include <boost/fusion/algorithm/iteration/for_each.hpp>
 #include <boost/fusion/include/for_each.hpp>
@@ -75,18 +81,22 @@ struct unpack_printer
 
 int main(int argc, char *argv[])
 {
+    using namespace avrsim;
 
-    volatile uint16_t instruction = 256 + 16 + 2;
-   decode_and_execute( 256 + 16 + 2);
-   decode_and_execute( 0);
-   decode_and_execute( 43356);
+    if (argc ==2)
+    {
+        std::ifstream assemblyfile{ argv[1]};
+        auto listing = parse_listing( assemblyfile);
 
 
-
-    typedef avrsim::unpacking::unpack_instructions<avrsim::instructions::LDD_Y, avrsim::instructions::q>::type instructions;
-//
-    boost::fusion::for_each( instructions(), unpack_printer());
-
+        avr_core avr{512};
+        avr.rom = listing.rom;
+        using decoder = typename find_decoder< avr_core, instructions::list>::type;
+        while (true)
+        {
+            decoder::decode_and_execute( avr, avr.fetch_instruction_word());
+        }
+    }
     return 0;
 }
 

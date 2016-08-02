@@ -10,6 +10,11 @@ add_executable(
 	avrgo.cpp	
 	)
 
+target_link_libraries( 
+    avrgo
+    
+    avrsim
+    )
 # when building for 64bit processors on linux we need to 
 # add -fPIC to the compiler options to be able to use
 # this lib in shared libraries
