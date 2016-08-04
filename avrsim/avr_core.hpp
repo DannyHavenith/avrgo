@@ -15,6 +15,9 @@
 #define AVR_CORE_HPP_
 #include <vector>
 #include <boost/cstdint.hpp>
+#include <array>
+#include <exception>
+
 #include "avr_instruction_set.hpp"
 
 namespace avrsim
@@ -41,17 +44,25 @@ struct avr_state
         : sp( ram_size -1), ram(ram_size)
     {}
 
-    typedef boost::uint16_t instruction_t;
-    typedef boost::uint8_t register_t;
-    typedef boost::uint32_t pointer_t;
+    avr_state()
+        :avr_state(512){}
 
+    typedef boost::uint16_t instruction_t;
+    typedef boost::uint8_t  register_t;
+    typedef boost::uint32_t pointer_t;
+    typedef std::vector<instruction_t> rom_t;
+    typedef std::vector<register_t>    ram_t;
+
+
+    uint8_t         eind{}; // only available on 22-bit pc cores
+    bool            is_sleeping{};
     flags_t         flags{};
-    register_t      r[32]{};
+    std::array<register_t, 32> r{};
     boost::uint64_t clock_ticks{};
     pointer_t       pc{};
     pointer_t       sp{};
-    std::vector<register_t>    ram;
-    std::vector<instruction_t> rom;
+    ram_t           ram;
+    rom_t           rom;
 };
 
 struct avr_core_utils
@@ -75,7 +86,7 @@ class avr_core : public avr_state, avr_core_utils
 {
 public:
 
-    using avr_state::avr_state;
+    using avr_state::avr_state; // delegate constructors to the avr_state
     typedef boost::int16_t  signed16;
     typedef boost::uint16_t unsigned16;
     typedef boost::int8_t   signed8;
@@ -85,6 +96,9 @@ public:
     static constexpr int register_Y = 28;
     static constexpr int register_Z = 30;
     static constexpr int io_offset = 0x20;
+    static constexpr bool is_xmega = false;
+    static constexpr bool is_22bit_pc = false;
+    static constexpr int rampz_io_address = 0x3b;
 
     // the following functions should become part of
     // a ram-model aspect.
@@ -94,16 +108,19 @@ public:
         return 0;
     }
 
+    // fetch the contents of the RAMPZ register in io space.
     pointer_t get_rampz_offset() const
     {
-        return 0;
+        return get_io( rampz_io_address);
     }
 
+    // todo: implement
     pointer_t get_rampx_offset() const
     {
         return 0;
     }
 
+    // todo: implement
     pointer_t get_rampy_offset() const
     {
         return 0;
@@ -114,12 +131,17 @@ public:
         return ram[address + io_offset];
     }
 
+    const register_t &get_io_address( uint16_t address) const
+    {
+        return ram[address + io_offset];
+    }
+
     void set_io( operand address, register_t value)
     {
         get_io_address( address) = value;
     }
 
-    register_t get_io( operand address)
+    register_t get_io( operand address) const
     {
         return get_io_address( address);
     }
@@ -132,7 +154,7 @@ public:
 
     unsigned16 get16( operand reg)
     {
-        return ((unsigned16) r[reg]) << 8 + r[reg+1];
+        return (((unsigned16) r[reg]) << 8) + r[reg+1];
     }
 
     void execute( NOP)
@@ -376,12 +398,7 @@ public:
 
     void execute( LDS, operand destination)
     {
-        execute( LDS_direct(), destination, fetch_instruction_word());
-    }
-
-    void execute( LDS_direct, operand dest, operand address)
-    {
-        r[dest] = ram[address];
+        r[destination] = ram[fetch_instruction_word()];
     }
 
     void increase16( operand reg)
@@ -415,6 +432,8 @@ public:
 
     unsigned8 fetch_rom_byte( pointer_t address) const
     {
+        // ROM byte addressing emulates little endian
+        // (low byte is address.0 == 0)
         return (address& 0x01)?
                         (rom[address/2] >> 8)
                     :   (rom[address/2]);
@@ -423,6 +442,8 @@ public:
     void execute( LPM_Z, operand dest)
     {
         r[dest] = fetch_rom_byte( get16( register_Z));
+        extra_clockticks(2);
+
     }
 
     void execute( LPM_Z_inc, operand dest)
@@ -434,6 +455,7 @@ public:
     void execute( ELPM_Z, operand dest)
     {
         r[dest] = fetch_rom_byte( get16( register_Z) + get_rampz_offset());
+        extra_clockticks(2);
     }
 
     void execute( ELPM_Z_inc, operand dest)
@@ -665,7 +687,7 @@ public:
         case 4: return flags.S;
         case 5: return flags.H;
         case 6: return flags.T;
-        case 7: return flags.I;
+        default: return flags.I;
         }
 
     }
@@ -695,7 +717,7 @@ public:
     // 16-bit addressing scheme.
     pointer_t pop_address()
     {
-        pointer_t result = ram[sp+1] + ram[sp+2] << 8;
+        pointer_t result = ram[sp+1] + (ram[sp+2] << 8);
         sp += 2;
         extra_clocktick();
         return result;
@@ -703,11 +725,13 @@ public:
 
     void push_address( pointer_t address)
     {
-        ram[sp] = address >> 8;
-        ram[sp-1] = address;
-        sp -= 2;
-        extra_clockticks(2);
-
+        if (sp > 1)
+        {
+            ram[sp] = address >> 8;
+            ram[sp-1] = address;
+            sp -= 2;
+            extra_clockticks(2);
+        }
     }
 
     void execute( EIJMP)
@@ -729,38 +753,76 @@ public:
 
     void execute( RETI)
     {
+        pc = pop_address();
+        if (!is_xmega) flags.I = 1;
+        extra_clockticks( is_22bit_pc?4:3);
     }
 
     void execute( EICALL)
     {
+        push_address(pc);
+        pc = (static_cast<pointer_t>(eind) << 16) + get16( register_Z );
+        extra_clockticks( is_xmega?2:3);
+    }
+
+    bool is_sleep_enabled()
+    {
+        // todo: implement MCUCR
+        return true;
     }
 
     void execute( SLEEP)
     {
+        if (is_sleep_enabled())
+        {
+            is_sleeping = true;
+        }
     }
+
+    class break_exception : std::exception
+    {
+    public:
+        break_exception( pointer_t pc, uint64_t clock)
+        :pc{pc},clock{clock}
+        {}
+
+        virtual const char *what() const noexcept
+        {
+            return "break";
+        }
+        pointer_t pc;
+        uint64_t  clock;
+
+    };
 
     void execute( BREAK)
     {
+        throw break_exception{pc-1, clock_ticks};
     }
 
     void execute( WDR)
     {
+        // todo: implement
     }
 
     void execute( LPM)
     {
+        execute( LPM_Z{}, 0);
     }
 
     void execute( ELPM)
     {
+        execute( ELPM_Z{}, 0);
     }
 
     void execute( SPM)
     {
+        // todo: implement
     }
 
     void execute( ESPM)
     {
+        // todo: implement
     }
 
     int16_t sign_extend12( operand input)
@@ -770,14 +832,14 @@ public:
 
     void execute( JMP, operand upper_bits)
     {
-        pc = fetch_instruction_word() + static_cast<pointer_t>( upper_bits) << 16;
+        pc = fetch_instruction_word() + (static_cast<pointer_t>( upper_bits) << 16);
         extra_clockticks(2);
     }
 
     void execute( CALL, operand upper_bits)
     {
         push_address( pc);
-        pc = fetch_instruction_word() + static_cast<pointer_t>( upper_bits) << 16;
+        pc = fetch_instruction_word() + (static_cast<pointer_t>( upper_bits) << 16);
         extra_clockticks(3);
     }
 
@@ -833,7 +895,7 @@ public:
 
     void execute( LDI, operand dest, operand constant)
     {
-        r[dest] = constant;
+        r[0x10 | dest] = constant;
     }
 
     void execute( BRBS, operand, operand)

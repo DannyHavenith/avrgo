@@ -9,6 +9,7 @@
 
 #include <string>
 #include <regex>
+#include <iostream>
 
 namespace avrsim
 {
@@ -33,6 +34,7 @@ listing parse_listing(std::istream& stream)
             result.rom[address]   = stoul( match[2], 0, 16) + 256 * stoul( match[3], 0, 16);
             if (match[4].matched)
             {
+                if (result.rom.size() < address + 2) result.rom.resize( address + 2);
                 result.rom[address+1] = stoul( match[4], 0, 16) + 256 * stoul( match[5], 0, 16);
             }
         }

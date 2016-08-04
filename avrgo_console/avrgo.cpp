@@ -83,21 +83,36 @@ int main(int argc, char *argv[])
 {
     using namespace avrsim;
 
-    if (argc ==2)
+    try
     {
-        std::ifstream assemblyfile{ argv[1]};
-        auto listing = parse_listing( assemblyfile);
-
-
-        avr_core avr{512};
-        avr.rom = listing.rom;
-        using decoder = typename find_decoder< avr_core, instructions::list>::type;
-        while (true)
+        if (argc ==2)
         {
-            decoder::decode_and_execute( avr, avr.fetch_instruction_word());
+            std::cout << "executing " << argv[1] << '\n';
+            std::ifstream assemblyfile{ argv[1]};
+            auto listing = parse_listing( assemblyfile);
+
+
+            avr_core avr{512};
+            avr.rom = listing.rom;
+            using decoder = typename find_decoder< avr_core, instructions::list>::type;
+            for (auto count = 100000000UL; count; count--)
+            {
+                decoder::decode_and_execute( avr, avr.fetch_instruction_word());
+            }
+            std::cout << "ready\n";
+            return 0;
+
+        }
+        else
+        {
+            return -3;
         }
     }
-    return 0;
+    catch (std::exception &e)
+    {
+        std::cerr << "something went wrong: " << e.what() << '\n';
+        return -2;
+    }
 }
 
 

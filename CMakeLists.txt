@@ -14,13 +14,17 @@ add_definitions(-D_SCL_SECURE_NO_WARNINGS)
 
 SET(Boost_USE_STATIC_LIBS OFF)
 SET(Boost_USE_MULTITHREAD ON)
-FIND_PACKAGE( Boost)
+FIND_PACKAGE( Boost COMPONENTS timer)
 
 include_directories( ${avrgo_SOURCE_DIR})
 include_directories( ${Boost_INCLUDE_DIR})
 
 add_subdirectory (avrsim)
 add_subdirectory (avrgo_console)
+
+if (EMSCRIPTEN)
+    add_subdirectory (emscripten_wrapper)
+endif(EMSCRIPTEN)
 
 
 set(CPACK_PACKAGE_NAME "avrgo")

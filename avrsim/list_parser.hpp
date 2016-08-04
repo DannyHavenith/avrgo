@@ -28,7 +28,7 @@ struct listing
         int line;
     };
 
-    std::map< int, line_info>   memory_to_line_info;
+    std::map< int, line_info>   memory_to_source_line;
 };
 
 listing parse_listing( std::istream &stream);

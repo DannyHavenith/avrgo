@@ -12,7 +12,7 @@
 #include <boost/mpl/int.hpp>
 #include <boost/mpl/greater.hpp>
 #include <boost/mpl/copy_if.hpp>
-#include <boost/mpl/front_inserter.hpp>
+#include <boost/mpl/back_inserter.hpp>
 #include <boost/mpl/contains.hpp>
 #include <boost/mpl/list.hpp>
 #include <boost/type_traits/is_same.hpp>
@@ -69,7 +69,7 @@ template<typename instruction, typename sorted_operands>
 struct operands : mpl::copy_if<
     sorted_operands,
     mpl::contains< instruction, mpl::_>,
-    mpl::front_inserter< mpl::list<> >
+    mpl::back_inserter< mpl::vector<> >
     >
 {
 };

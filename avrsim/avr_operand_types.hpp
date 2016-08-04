@@ -25,7 +25,7 @@ const int b = 9;
 /// Sorted list of possible AVR operands.
 /// The order of operands in this list also determines the order of operand
 /// arguments to the execute() methods.
-typedef boost::mpl::vector_c< int, d, r, k, q, A, s, b, x> avr_operands;
+typedef boost::mpl::vector_c< int, d, A, r, k, q, s, b, x> avr_operands;
 }
 }
 

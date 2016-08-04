@@ -31,6 +31,7 @@
 #include <boost/utility/enable_if.hpp>
 #include <boost/cstdint.hpp>
 
+namespace mpl = boost::mpl;
 namespace avrsim {
 
 /**
