@@ -20,14 +20,7 @@
 #ifndef UNPACK_OPERAND_HPP_
 #define UNPACK_OPERAND_HPP_
 #include <utility> // for std::pair and std::make_pair
-#include <boost/mpl/vector.hpp>
-#include <boost/mpl/int.hpp>
-#include <boost/mpl/pop_front.hpp>
-#include <boost/mpl/push_back.hpp>
-#include <boost/mpl/front.hpp>
-#include <boost/mpl/empty.hpp>
-#include <boost/mpl/back_inserter.hpp>
-#include <boost/mpl/copy.hpp>
+#include "mpl_with_large_vectors.h"
 #include <boost/utility/enable_if.hpp>
 #include <boost/cstdint.hpp>
 

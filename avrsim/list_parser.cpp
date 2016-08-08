@@ -20,7 +20,7 @@ listing parse_listing(std::istream& stream)
 
     listing result;
     string line;
-    int file_counter = 0;
+    int current_assembly_line = 0;
     const std::regex assembly_line{R"(^\s*([0-9a-fA-F]+):\s+([0-9a-fA-F]{2})\s+([0-9a-fA-F]{2})\s+(?:([0-9a-fA-F]{2})\s+([0-9a-fA-F]{2})\s+)?(.*)$)"};
 
     while (std::getline( stream, line))
@@ -29,6 +29,7 @@ listing parse_listing(std::istream& stream)
         if (regex_match(line, match, assembly_line))
         {
             auto address = stoul( match[1], 0, 16)/2;
+            result.address_to_assembly[address] = current_assembly_line;
             result.assembly[address] = match[6];
             if (result.rom.size() < address + 1) result.rom.resize( address + 1);
             result.rom[address]   = stoul( match[2], 0, 16) + 256 * stoul( match[3], 0, 16);
@@ -38,6 +39,7 @@ listing parse_listing(std::istream& stream)
                 result.rom[address+1] = stoul( match[4], 0, 16) + 256 * stoul( match[5], 0, 16);
             }
         }
+        ++current_assembly_line;
     }
     return result;
 }

@@ -7,7 +7,7 @@
 
 #ifndef AVR_OPERAND_TYPES_HPP_
 #define AVR_OPERAND_TYPES_HPP_
-#include <boost/mpl/vector_c.hpp>
+#include "mpl_with_large_vectors.h"
 namespace avrsim {
 namespace instructions {
 // the operand codes are used to encode the different operand bits

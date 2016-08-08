@@ -5,8 +5,6 @@
 //  accompanying file LICENSE_1_0.txt or copy at
 //  http://www.boost.org/LICENSE_1_0.txt)
 //
-#define BOOST_MPL_CFG_NO_PREPROCESSED_HEADERS
-#define BOOST_MPL_LIMIT_VECTOR_SIZE 50
 
 #include "emscripten/bind.h"
 #include "avrsim/avr_emulator.hpp"
@@ -25,6 +23,11 @@ listing parseString( const std::string &assembly)
     return parse_listing( stream);
 }
 
+
+std::vector<uint8_t> testReturnVector()
+{
+    return {1,2,3,4,5};
+}
 
 emulator *makeEmulator( const std::string &assembly)
 {
@@ -48,17 +51,21 @@ EMSCRIPTEN_BINDINGS( avrjs) {
 
     register_vector<uint16_t>("VectorInt16");
     register_vector<std::string>("VectorString");
+    register_vector<uint8_t>("VectorRegister");
     register_map<int,std::string>("MapAssembly");
     register_map<int,listing::line_info>("MapLineInfo");
+    register_map<int,int>("AddressToAssemblyLine");
 
     value_object<listing>("Listing")
         .field("rom",            &listing::rom)
         .field("assembly",       &listing::assembly)
         .field("filenames",      &listing::filenames)
-        .field("memory_to_line", &listing::memory_to_source_line)
+        .field("addressToAssembly", &listing::address_to_assembly)
+        .field("memoryToLine", &listing::memory_to_source_line)
         ;
 
     function("parseString", &parseString);
+    function("testReturnVector", &testReturnVector);
 
     value_object<flags_t>("Flags")
         .field("I", &flags_t::I)
@@ -74,18 +81,28 @@ EMSCRIPTEN_BINDINGS( avrjs) {
     value_object<avr_state>("AvrState")
         .field("eind",          &avr_state::eind)
         .field("pc",            &avr_state::pc)
-        .field("clock_ticks",   &avr_state::clock_ticks)
+        .field("clockTicks",    &avr_state::clock_ticks)
         .field("ram",           &avr_state::ram)
         .field("r",             &avr_state::r)
+        .field("isSleeping",    &avr_state::is_sleeping)
+        .field("flags",         &avr_state::flags)
         ;
 
     class_<emulator>("Emulator")
-//        .constructor<size_t>()
         .constructor(&makeEmulator, allow_raw_pointers())
         .function("initialize", &emulator::initialize)
         .function("fillRom",    &emulator::fillRom)
         .function("run",        &emulator::run)
         .function("getPc",      &emulator::getPc)
+        .function("setPc",      &emulator::setPc)
+        .function("getState",   &emulator::getState)
+        .function("getRam",     &emulator::getRam)
+        .function("setRam",     &emulator::setRam)
+        .function("getRegister",&emulator::getRegister)
+        .function("setRegister",&emulator::setRegister)
+        .function("setBreakpoint",  &emulator::setBreakpoint)
+        .function("clearBreakpoint",&emulator::clearBreakpoint)
+
         //    .property("x", &MyClass::getX, &MyClass::setX)
         //    .class_function("getStringFromInstance", &MyClass::getStringFromInstance)
         ;

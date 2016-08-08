@@ -7,15 +7,7 @@
 
 #ifndef INSTRUCTION_HPP_
 #define INSTRUCTION_HPP_
-#include <boost/mpl/vector_c.hpp>
-#include <boost/mpl/at.hpp>
-#include <boost/mpl/int.hpp>
-#include <boost/mpl/greater.hpp>
-#include <boost/mpl/copy_if.hpp>
-#include <boost/mpl/back_inserter.hpp>
-#include <boost/mpl/contains.hpp>
-#include <boost/mpl/list.hpp>
-#include <boost/type_traits/is_same.hpp>
+#include "mpl_with_large_vectors.h"
 
 namespace avrsim
 {

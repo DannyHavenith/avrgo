@@ -9,7 +9,7 @@ cmake_minimum_required(VERSION 2.8.0)
 set(CMAKE_CXX_STANDARD 11)
 SET(CMAKE_CXX_FLAGS "-std=c++11")
 
-project(avrgo)
+project(avrgo CXX)
 add_definitions(-D_SCL_SECURE_NO_WARNINGS)
 
 SET(Boost_USE_STATIC_LIBS OFF)
@@ -20,10 +20,12 @@ include_directories( ${avrgo_SOURCE_DIR})
 include_directories( ${Boost_INCLUDE_DIR})
 
 add_subdirectory (avrsim)
-add_subdirectory (avrgo_console)
 
 if (EMSCRIPTEN)
     add_subdirectory (emscripten_wrapper)
+else(EMSCRIPTEN)
+    add_subdirectory (avrgo_console)
+    add_subdirectory( tests)
 endif(EMSCRIPTEN)
 
 

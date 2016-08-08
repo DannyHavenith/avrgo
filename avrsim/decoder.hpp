@@ -7,15 +7,7 @@
 
 #ifndef DECODER_HPP_
 #define DECODER_HPP_
-#include <boost/mpl/size.hpp>
-#include <boost/mpl/front.hpp>
-#include <boost/mpl/copy_if.hpp>
-#include <boost/mpl/front_inserter.hpp>
-#include <boost/mpl/list.hpp>
-#include <boost/mpl/eval_if.hpp>
-#include <boost/mpl/empty.hpp>
-#include <boost/mpl/or.hpp>
-#include <boost/mpl/count_if.hpp>
+#include "mpl_with_large_vectors.h"
 #include <boost/utility/enable_if.hpp>
 #include <boost/cstdint.hpp>
 

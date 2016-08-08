@@ -1,23 +1,151 @@
 <html>
 <head>
+<style>
+pre {
+    margin: .2em;
+}
+.odd {
+    background-color: aliceblue;
+}
+#source {
+    float: left;
+    overflow: auto;
+    height: 100vh;
+    position: relative;
+}
+.currentLine {
+    background-color: highlight;
+}
+.changedRegister {
+    background-color: highlight;
+}
+
+#parent {
+    position: relative;
+}
+</style>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
 <script type="text/javascript">
+  var emulator = {};
+  var listing = {};
   var Module = {
     onRuntimeInitialized: function() {
-      var emulator = new Module.Emulator(
-              "  00:    89 81           ldd r24, Y+1    ; 0x01 \n" +
-              "  02:    89 81           ldd r26, Y+1    ; 0x01"
-          );
-      alert( emulator.getPc());
-      alert( emulator.getPc());
-      
-      emulator.run(1);
-      alert( emulator.getPc());
-      emulator.delete();
+        $.ajax( "ws2811.lss", { dataType:"text"})
+            .done(function( data){ 
+                jQuery.fn.scrollTo = function(elem, speed) { 
+                    $(this).animate({
+                        scrollTop:  $(this).scrollTop() - $(this).offset().top + $(elem).offset().top 
+                    }, speed == undefined ? 1000 : speed); 
+                    return this; 
+                };
+                listing = Module.parseString( data);
+                emulator = new Module.Emulator("");
+                emulator.fillRom( listing.rom);
+                var lines = data.split("\n");
+                var sourceDiv = $('#source');
+                $.each(lines, function(i, item) {
+                    if (item.length == 0) item = ' ';
+                    sourceDiv.append($('<pre/>')
+                            .text(item)
+                            .attr('id','L'+i)
+                            .addClass(i%2?'odd':'even')
+                            .addClass('sourceLine')
+                    );
+                });
+                updateView();
+            })
+            .fail( function (jqXHR, textStatus, errorThrown) {
+                alert('Sorry. I could not load a source file to show you.');
+            })
+            ;
     }
+   
   };
+  
+  var previousRegisters = Array();
+  function updateView()
+  {
+      var state = emulator.getState();
+      for (r = 0; r < state.r.size();++r)
+      {
+          var value = state.r.get(r);
+          var previousValue = previousRegisters[r];
+          if (typeof  previousValue != 'undefined' && previousValue != value)
+          {
+              $('#regR'+r).addClass('changedRegister');
+          }
+          else 
+          {
+              $('#regR'+r).removeClass('changedRegister');
+          }
+          previousRegisters[r] = value;
+          $('#regR'+r + ' td:nth-child(2)').html(state.r.get(r));  
+      }
+      
+      $('#regPC td:nth-child(2)').text(state.pc);
+      $('.sourceLine').removeClass('currentLine');
+      if (typeof listing.addressToAssembly.get( state.pc) != 'undefined')
+      {
+          var line = listing.addressToAssembly.get( state.pc);
+          $('#L'+line).addClass('currentLine');
+          $('#source').scrollTo('#L' + line, 10);
+      }
+  }
+  
+  function singleStep()
+  {
+      var value = +$('#steps').val();
+      if (isNaN( value) || value <1) value = 1;
+      
+      emulator.run(value);
+      updateView();
+  }
 </script>
   <script src="avrjs.js"></script>
  </head>
  <body>
+ <div id='parent'>
+ <div id='source'></div>
+ <div id='control'>
+    <button name='step' id=step onClick='singleStep();'>Step</button><input type="text" id="steps" value="1"/>
+    <table>
+        <tr><th>register</th><th>value</th><th>hex</th></tr>
+        
+        <tr id='regPC'><td>PC</td><td/><td/></tr>
+        <tr id='regR0'><td>R0</td><td/><td/></tr>
+        <tr id='regR1'><td>R1</td><td/><td/></tr>
+        <tr id='regR2'><td>R2</td><td/><td/></tr>
+        <tr id='regR3'><td>R3</td><td/><td/></tr>
+        <tr id='regR4'><td>R4</td><td/><td/></tr>
+        <tr id='regR5'><td>R5</td><td/><td/></tr>
+        <tr id='regR6'><td>R6</td><td/><td/></tr>
+        <tr id='regR7'><td>R7</td><td/><td/></tr>
+        <tr id='regR8'><td>R8</td><td/><td/></tr>
+        <tr id='regR9'><td>R9</td><td/><td/></tr>
+        <tr id='regR10'><td>R10</td><td/><td/></tr>
+        <tr id='regR11'><td>R11</td><td/><td/></tr>
+        <tr id='regR12'><td>R12</td><td/><td/></tr>
+        <tr id='regR13'><td>R13</td><td/><td/></tr>
+        <tr id='regR14'><td>R14</td><td/><td/></tr>
+        <tr id='regR15'><td>R15</td><td/><td/></tr>
+        <tr id='regR16'><td>R16</td><td/><td/></tr>
+        <tr id='regR17'><td>R17</td><td/><td/></tr>
+        <tr id='regR18'><td>R18</td><td/><td/></tr>
+        <tr id='regR19'><td>R19</td><td/><td/></tr>
+        <tr id='regR20'><td>R20</td><td/><td/></tr>
+        <tr id='regR21'><td>R21</td><td/><td/></tr>
+        <tr id='regR22'><td>R22</td><td/><td/></tr>
+        <tr id='regR23'><td>R23</td><td/><td/></tr>
+        <tr id='regR24'><td>R24</td><td/><td/></tr>
+        <tr id='regR25'><td>R25</td><td/><td/></tr>
+        <tr id='regR26'><td>R26</td><td/><td/></tr>
+        <tr id='regR27'><td>R27</td><td/><td/></tr>
+        <tr id='regR28'><td>R28</td><td/><td/></tr>
+        <tr id='regR29'><td>R29</td><td/><td/></tr>
+        <tr id='regR30'><td>R30</td><td/><td/></tr>
+        <tr id='regR31'><td>R31</td><td/><td/></tr>
+    </table>
+ </div>
+ </div>
  </body>
 </html>

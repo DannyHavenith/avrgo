@@ -21,6 +21,7 @@ struct listing
     std::vector< uint16_t>       rom;
     std::map< int, std::string>  assembly;
     std::vector<std::string>     filenames;
+    std::map<int, int> address_to_assembly;
 
     struct line_info
     {

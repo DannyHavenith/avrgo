@@ -41,7 +41,7 @@ struct flags_t
 struct avr_state
 {
     avr_state( size_t ram_size)
-        : sp( ram_size -1), ram(ram_size)
+        : sp( ram_size -1), ram(ram_size), r(32)
     {}
 
     avr_state()
@@ -57,8 +57,8 @@ struct avr_state
     uint8_t         eind{}; // only available on 22-bit pc cores
     bool            is_sleeping{};
     flags_t         flags{};
-    std::array<register_t, 32> r{};
-    boost::uint64_t clock_ticks{};
+    std::vector<register_t>      r;
+    unsigned int    clock_ticks{};
     pointer_t       pc{};
     pointer_t       sp{};
     ram_t           ram;
@@ -171,7 +171,7 @@ public:
 
     void set_z_and_n( register_t result)
     {
-        flags.Z = result;
+        flags.Z = result == 0;
         flags.N = result & 0x80;
     }
 
