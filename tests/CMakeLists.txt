@@ -12,7 +12,7 @@ include_directories(${GTEST_INCLUDE_DIRS})
 add_executable(
 	unittests 
 
-	test_core.cpp	
+	test_core.cpp
 	)
 
 target_link_libraries( 

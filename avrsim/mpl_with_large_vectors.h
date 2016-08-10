@@ -40,6 +40,8 @@
 #include <boost/mpl/greater.hpp>
 #include <boost/mpl/contains.hpp>
 #include <boost/mpl/vector.hpp>
+#include <boost/mpl/joint_view.hpp>
+
 
 
 

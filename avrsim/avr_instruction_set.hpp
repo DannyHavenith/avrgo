@@ -11,8 +11,7 @@
 
 #ifndef AVR_INSTRUCTION_SET_HPP_
 #define AVR_INSTRUCTION_SET_HPP_
-#include <boost/mpl/joint_view.hpp>
-#include <boost/mpl/vector.hpp>
+#include "mpl_with_large_vectors.h"
 #include "instruction.hpp"
 #include "avr_operand_types.hpp"
 
@@ -44,7 +43,6 @@ struct SBCI     : instruction< 0,1,0,0, k,k,k,k, d,d,d,d, k,k,k,k > {};
 struct SUBI     : instruction< 0,1,0,1, k,k,k,k, d,d,d,d, k,k,k,k > {};
 struct ORI      : instruction< 0,1,1,0, k,k,k,k, d,d,d,d, k,k,k,k > {};
 struct ANDI     : instruction< 0,1,1,1, k,k,k,k, d,d,d,d, k,k,k,k > {};
-struct LDD_Y    : instruction< 1,0,q,0, q,q,0,d, d,d,d,d, 1,q,q,q > {};
 struct LDD_Z    : instruction< 1,0,q,0, q,q,0,d, d,d,d,d, 0,q,q,q > {};
 struct STD_Z    : instruction< 1,0,q,0, q,q,1,d, d,d,d,d, 0,q,q,q > {};
 struct STD_Y    : instruction< 1,0,q,0, q,q,1,d, d,d,d,d, 1,q,q,q > {};
@@ -58,27 +56,27 @@ struct LPM_Z_inc: instruction< 1,0,0,1, 0,0,0,d, d,d,d,d, 0,1,0,1 > {};
 struct ELPM     : instruction< 1,0,0,1, 0,1,0,1, 1,1,0,1, 1,0,0,0 > {};
 struct ELPM_Z   : instruction< 1,0,0,1, 0,0,0,d, d,d,d,d, 0,1,1,0 > {};
 struct ELPM_Z_inc:instruction< 1,0,0,1, 0,0,0,d, d,d,d,d, 0,1,1,1 > {};
+struct LDD_Y    : instruction< 1,0,q,0, q,q,0,d, d,d,d,d, 1,q,q,q > {};
 struct LD_Y_inc : instruction< 1,0,0,1, 0,0,0,d, d,d,d,d, 1,0,0,1 > {};
 struct LD_Y_dec : instruction< 1,0,0,1, 0,0,0,d, d,d,d,d, 1,0,1,0 > {};
-struct LD_Y_min : instruction< 1,0,0,1, 0,0,0,d, d,d,d,d, 1,0,1,1 > {};
-struct LD_Y     : instruction< 1,0,0,1, 0,0,0,d, d,d,d,d, 1,0,0,0 > {};
+//struct LD_Y_min : instruction< 1,0,0,1, 0,0,0,d, d,d,d,d, 1,0,1,1 > {};
+struct LD_X     : instruction< 1,0,0,1, 0,0,0,d, d,d,d,d, 1,1,0,0 > {};
 struct LD_X_inc : instruction< 1,0,0,1, 0,0,0,d, d,d,d,d, 1,1,0,1 > {};
 struct LD_X_dec : instruction< 1,0,0,1, 0,0,0,d, d,d,d,d, 1,1,1,0 > {};
-struct LD_X_min : instruction< 1,0,0,1, 0,0,0,d, d,d,d,d, 1,1,1,1 > {};
-struct LD_X     : instruction< 1,0,0,1, 0,0,0,d, d,d,d,d, 1,1,0,0 > {};
+//struct LD_X_min : instruction< 1,0,0,1, 0,0,0,d, d,d,d,d, 1,1,1,1 > {};
 struct POP      : instruction< 1,0,0,1, 0,0,0,d, d,d,d,d, 1,1,1,1 > {};
 struct STS      : instruction< 1,0,0,1, 0,0,1,r, r,r,r,r, 0,0,0,0 > {};
 struct ST_Z_inc : instruction< 1,0,0,1, 0,0,1,r, r,r,r,r, 0,0,0,1 > {};
 struct ST_Z_dec : instruction< 1,0,0,1, 0,0,1,r, r,r,r,r, 0,0,1,0 > {};
-struct ST_Z_min : instruction< 1,0,0,1, 0,0,1,r, r,r,r,r, 0,0,1,1 > {};
+//struct ST_Z_min : instruction< 1,0,0,1, 0,0,1,r, r,r,r,r, 0,0,1,1 > {};
 struct unk1     : instruction< 1,0,0,1, 0,0,1,r, r,r,r,r, 0,1,x,x > {};
 struct ST_Y_inc : instruction< 1,0,0,1, 0,0,1,r, r,r,r,r, 1,0,0,1 > {};
 struct ST_Y_dec : instruction< 1,0,0,1, 0,0,1,r, r,r,r,r, 1,0,1,0 > {};
-struct ST_Y_min : instruction< 1,0,0,1, 0,0,1,r, r,r,r,r, 1,0,1,1 > {};
+//struct ST_Y_min : instruction< 1,0,0,1, 0,0,1,r, r,r,r,r, 1,0,1,1 > {};
 struct ST_Y     : instruction< 1,0,0,1, 0,0,1,r, r,r,r,r, 1,0,0,0 > {};
 struct ST_X_inc : instruction< 1,0,0,1, 0,0,1,r, r,r,r,r, 1,1,0,1 > {};
 struct ST_X_dec : instruction< 1,0,0,1, 0,0,1,r, r,r,r,r, 1,1,1,0 > {};
-struct ST_X_min : instruction< 1,0,0,1, 0,0,1,r, r,r,r,r, 1,1,1,1 > {};
+//struct ST_X_min : instruction< 1,0,0,1, 0,0,1,r, r,r,r,r, 1,1,1,1 > {};
 struct ST_X     : instruction< 1,0,0,1, 0,0,1,r, r,r,r,r, 1,1,0,0 > {};
 struct PUSH     : instruction< 1,0,0,1, 0,0,1,d, d,d,d,d, 1,1,1,1 > {};
 struct COM      : instruction< 1,0,0,1, 0,1,0,d, d,d,d,d, 0,0,0,0 > {};
@@ -124,111 +122,125 @@ struct BST      : instruction< 1,1,1,1, 1,0,1,d, d,d,d,d, 0,b,b,b > {};
 struct SBRC     : instruction< 1,1,1,1, 1,1,0,r, r,r,r,r, 0,b,b,b > {};
 struct SBRS     : instruction< 1,1,1,1, 1,1,1,r, r,r,r,r, 0,b,b,b > {};
 
+
+typedef mpl::vector<
+    NOP,
+    MOVW,
+    MULS,
+    MULSU,
+    FMUL,
+    FMULS,
+    FMULSU,
+    CPC,
+    SBC,
+    ADD,
+    CPSE,
+    CP,
+    SUB,
+    ADC,
+    AND,
+    EOR,
+    OR,
+    MOV,
+    CPI,
+    SBCI,
+    SUBI,
+    ORI,
+    ANDI,
+    LDD_Y,
+    LDD_Z,
+    STD_Z,
+    STD_Y,
+    LDS,
+    LD_Z_inc,
+    LD_Z_dec,
+//    LD_Z_min,
+    LPM,
+    LPM_Z,
+    LPM_Z_inc
+    > list1;
+
+typedef mpl::vector<
+    ELPM,
+    ELPM_Z,
+    ELPM_Z_inc,
+    LD_Y_inc,
+    LD_Y_dec,
+//    LD_Y_min,
+//    LD_Y,
+    LD_X_inc,
+    LD_X_dec,
+//    LD_X_min,
+    LD_X,
+    POP,
+    STS,
+    ST_Z_inc,
+    ST_Z_dec,
+//    ST_Z_min,
+//    unk1,
+    ST_Y_inc,
+    ST_Y_dec,
+//    ST_Y_min,
+    ST_Y,
+    ST_X_inc,
+    ST_X_dec,
+//    ST_X_min,
+    ST_X,
+    PUSH,
+    COM,
+    NEG,
+    SWAP,
+    INC,
+//    unk2,
+    ASR,
+    LSR,
+    ROR
+    > list2;
+
+typedef mpl::vector<
+    DEC,
+    BSET,
+    BCLR,
+    IJMP,
+    EIJMP,
+    RET,
+    ICALL,
+    RETI,
+    EICALL,
+    SLEEP,
+    BREAK,
+    WDR,
+    SPM,
+    ESPM,
+    JMP,
+    CALL,
+    ADIW,
+    SBIW,
+    CBI,
+    SBIC,
+    SBI,
+    SBIS,
+    MUL,
+    IN,
+    OUT,
+    RJMP,
+    RCALL,
+    LDI,
+    BRBS,
+    BRBC,
+    BLD,
+    BST,
+    SBRC,
+    SBRS
+    > list3;
+
+
 // extra instruction tags, for instructions that require an extra word
 struct LDS_direct {};
 struct STS_direct {};
 
 // create a list that enumerates all avr instructions
-typedef boost::mpl::vector<
-        NOP,
-        MOVW,
-        MULS,
-        MULSU,
-        FMUL,
-        FMULS,
-        FMULSU,
-        CPC,
-        SBC,
-        ADD,
-        CPSE,
-        CP,
-        SUB,
-        ADC,
-        AND,
-        EOR,
-        OR,
-        MOV,
-        CPI,
-        SBCI,
-        SUBI,
-        ORI,
-        ANDI,
-        LDD_Z,
-        LDD_Y,
-        STD_Z,
-        STD_Y,
-        LDS,
-        LD_Z_inc,
-        LD_Z_dec,
-        LD_Z_min,
-        LPM_Z,
-        ELPM_Z,
-        LD_Y_inc,
-        LD_Y_dec,
-        LD_Y_min,
-        LD_Y,
-        LD_X,
-        POP,
-        STS,
-        ST_Z_inc,
-        ST_Z_dec,
-        ST_Z_min
-        > list1;
 
-typedef boost::mpl::vector<
-        ST_Y_inc,
-        ST_Y_dec,
-        ST_Y_min,
-        ST_Y,
-        ST_X,
-        PUSH,
-        COM,
-        NEG,
-        SWAP,
-        INC,
-        ASR,
-        LSR,
-        ROR,
-        DEC,
-        BSET,
-        BCLR,
-        IJMP,
-        EIJMP,
-        RET,
-        ICALL,
-        RETI,
-        EICALL,
-        SLEEP,
-        BREAK,
-        WDR,
-        LPM,
-        ELPM,
-        SPM,
-        ESPM,
-        JMP,
-        CALL,
-        ADIW,
-        SBIW,
-        CBI
-        > list2;
-
-typedef boost::mpl::vector<
-        SBIC,
-        SBI,
-        SBIS,
-        MUL,
-        IN,
-        OUT,
-        RJMP,
-        RCALL,
-        LDI,
-        BRBS,
-        BRBC,
-        BLD,
-        BST,
-        SBRC,
-        SBRS
-        > list3;
 
 
 /// list of all known avr instructions.

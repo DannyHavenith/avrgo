@@ -17,6 +17,7 @@
 #include <boost/cstdint.hpp>
 #include <array>
 #include <exception>
+#include <tuple>
 
 #include "avr_instruction_set.hpp"
 
@@ -36,6 +37,12 @@ struct flags_t
     flag_t N;
     flag_t Z;
     flag_t C;
+
+    bool operator==( const flags_t &other) const
+    {
+        return std::tie( I, T, H, S, V, N, Z, C) ==
+                std::tie( other.I, other.T, other.H, other.S, other.V, other.N, other.Z, other.C);
+    }
 };
 
 struct avr_state
@@ -148,13 +155,13 @@ public:
 
     void assign16( operand reg, boost::int16_t value)
     {
-        r[reg] = value >> 8;
-        r[reg+1] = value;
+        r[reg] = value;
+        r[reg+1] = value >> 8;
     }
 
     unsigned16 get16( operand reg)
     {
-        return (((unsigned16) r[reg]) << 8) + r[reg+1];
+        return r[reg] + (static_cast<unsigned16>(r[reg+1]) << 8);
     }
 
     void execute( NOP)
@@ -245,9 +252,8 @@ public:
                 |   (result & ~dest);
         flags.C = carries & 0x80;
         flags.H = carries & 0x08;
-        flags.V =
-                    ((dest & ~source & ~result)
-                |   (~dest & source & result))
+        flags.V =  (( dest & ~source & ~result)
+                |   (~dest &  source &  result))
                 & 0x80;
         flags.S = flags.V ^ flags.N;
         set_z_and_n( result);
@@ -255,15 +261,26 @@ public:
         return result;
     }
 
-    void execute( CPC, operand dest, operand source)
+    signed16 subtract16( signed16 left, signed16 right)
     {
-        // ignore subtract results, change flags only
-        subtract( r[dest], flags.C?((unsigned16)(r[source]+1)):r[source]);
+        signed16 result = left - right;
+        flags.C = (left >= 0) and (result < 0);
+        flags.N = result < 0;
+        flags.V = (left < 0) and (result >= 0); // check
+        flags.Z = result == 0;
+        flags.S = !flags.N != !flags.V;
+        return result;
     }
 
-    void execute( SBC, operand dest, operand source)
+    signed16 add16( signed16 left, signed16 right)
     {
-        r[dest] = subtract( r[dest], r[source]);
+        signed16 result = left + right;
+        flags.C = result >= 0 and left < 0;
+        flags.Z = result == 0;
+        flags.N = result < 0;
+        flags.V = result < 0 and left >= 0;
+        flags.S = !flags.N != !flags.V;
+        return result;
     }
 
     unsigned8 add( unsigned16 dest, unsigned16 source)
@@ -284,6 +301,21 @@ public:
         return result;
     }
 
+    void execute( CPC, operand dest, operand source)
+    {
+        // ignore subtract results, change flags only
+        auto previousZ = flags.Z;
+        subtract( r[dest], static_cast<unsigned16>(r[source]) + (flags.C?1:0));
+        flags.Z = flags.Z and previousZ;
+    }
+
+    void execute( SBC, operand dest, operand source)
+    {
+        auto previousZ = flags.Z;
+        r[dest] = subtract( r[dest], static_cast<unsigned16>(r[source]) + (flags.C?1:0));
+        flags.Z = flags.Z and previousZ;
+    }
+
     void execute( ADD, operand dest, operand source)
     {
         r[dest] = add( r[dest], r[source]);
@@ -291,7 +323,8 @@ public:
 
     void skip()
     {
-        ++pc;
+        auto instruction = fetch_instruction_word();
+        // todo skip 2-word instructions
     }
 
     void execute( CPSE, operand dest, operand source)
@@ -348,17 +381,17 @@ public:
 
     void execute( CPI, operand dest, operand constant)
     {
-        subtract( r[dest], constant);
+        subtract( r[dest + 16], constant);
     }
 
     void execute( SBCI, operand dest, operand constant)
     {
-        r[dest] = subtract( r[dest], flags.C?((unsigned16)(constant+1)):constant);
+        r[dest+16] = subtract( r[dest+16], flags.C?((unsigned16)(constant+1)):constant);
     }
 
     void execute( SUBI, operand dest, operand constant)
     {
-        r[dest] = subtract( r[dest], constant);
+        r[dest+16] = subtract( r[dest+16], constant);
     }
 
     void execute( ORI, operand dest, operand constant)
@@ -443,7 +476,6 @@ public:
     {
         r[dest] = fetch_rom_byte( get16( register_Z));
         extra_clockticks(2);
-
     }
 
     void execute( LPM_Z_inc, operand dest)
@@ -476,18 +508,6 @@ public:
         execute( LDD_Y(), dest, 0);
     }
 
-    void execute( LD_Y_min, operand dest)
-    {
-        decrease16( register_Y);
-        execute( LDD_Y(), dest, 0);
-        increase16( register_Y);
-    }
-
-    void execute( LD_Y, operand dest)
-    {
-        execute( LDD_Y(), dest, 0);
-    }
-
     void execute( LD_X, operand dest)
     {
         r[dest] = ram[ get16( register_X)];
@@ -504,14 +524,6 @@ public:
         decrease16( register_X);
         execute( LD_X(), dest);
     }
-
-    void execute( LD_X_min, operand dest)
-    {
-        decrease16( register_X);
-        execute( LD_X(), dest);
-        increase16( register_X);
-    }
-
 
     void execute( POP, operand dest)
     {
@@ -540,12 +552,12 @@ public:
         execute( STD_Z(), source, 0);
     }
 
-    void execute( ST_Z_min, operand source)
-    {
-        decrease16( register_Z);
-        execute( STD_Z(), source, 0);
-        increase16( register_Z);
-    }
+//    void execute( ST_Z_min, operand source)
+//    {
+//        decrease16( register_Z);
+//        execute( STD_Z(), source, 0);
+//        increase16( register_Z);
+//    }
 
     void execute( unk1)
     {
@@ -563,12 +575,12 @@ public:
         execute( STD_Y(), source, 0);
     }
 
-    void execute( ST_Y_min, operand source)
-    {
-        decrease16(register_Y);
-        execute( STD_Y(), source, 0);
-        increase16( register_Y);
-    }
+//    void execute( ST_Y_min, operand source)
+//    {
+//        decrease16(register_Y);
+//        execute( STD_Y(), source, 0);
+//        increase16( register_Y);
+//    }
 
     void execute( ST_Y, operand source)
     {
@@ -592,12 +604,12 @@ public:
         execute( ST_X(), source);
     }
 
-    void execute( ST_X_min, operand source)
-    {
-        decrease16( register_X);
-        execute( ST_X(), source);
-        increase16( register_X);
-    }
+//    void execute( ST_X_min, operand source)
+//    {
+//        decrease16( register_X);
+//        execute( ST_X(), source);
+//        increase16( register_X);
+//    }
 
 
     void execute( PUSH, operand dest)
@@ -830,6 +842,19 @@ public:
         return (( static_cast<int16_t>(input) + 0x0800) & 0x0FFF) - 0x0800;
     }
 
+    int8_t sign_extend7( operand input)
+    {
+        return ((static_cast<int8_t>(input) + 0x40) & 0x7F) - 0x40;
+    }
+
+    // not used yet. should replace the two functions above.
+    template< typename Integer, int sourceBits>
+    Integer sign_extend( Integer source)
+    {
+        constexpr Integer upperBit = (1 << (sourceBits - 1));
+        return ((source ^ upperBit) & ((1<< sourceBits)-1)) - upperBit;
+    }
+
     void execute( JMP, operand upper_bits)
     {
         pc = fetch_instruction_word() + (static_cast<pointer_t>( upper_bits) << 16);
@@ -843,32 +868,49 @@ public:
         extra_clockticks(3);
     }
 
-    void execute( ADIW, operand, operand)
+    void execute( ADIW, operand reg_pair, operand value)
     {
+        assign16( 2*reg_pair + 24, add16( r[2*reg_pair + 24], value));
+        extra_clocktick();
     }
 
-    void execute( SBIW, operand, operand)
+
+    void execute( SBIW, operand reg_pair, operand value)
     {
+        assign16( 2*reg_pair+24, subtract16( get16(2*reg_pair+24), value));
+        extra_clocktick();
     }
 
-    void execute( CBI, operand, operand)
+    void execute( CBI, operand ioaddr, operand bit)
     {
+        set_io( ioaddr, get_io( ioaddr) & ~ (1<<bit));
+        extra_clocktick();
     }
 
-    void execute( SBIC, operand, operand)
+    void execute( SBIC, operand ioaddr, operand bit)
     {
+        if (!(get_io( ioaddr) & (1<<bit)))
+        {
+            skip();
+        }
     }
 
-    void execute( SBI, operand, operand)
+    void execute( SBI, operand ioaddr, operand bit)
     {
+        set_io( ioaddr, get_io( ioaddr) | (1<<bit));
     }
 
-    void execute( SBIS, operand, operand)
+    void execute( SBIS, operand ioaddr, operand bit)
     {
+        if (get_io( ioaddr) & (1<<bit))
+        {
+            skip();
+        }
     }
 
-    void execute( MUL, operand, operand)
+    void execute( MUL, operand dest, operand source)
     {
+       assign16( 0, static_cast<uint16_t>( r[dest]) * r[source]);
     }
 
     void execute( IN, operand dest, operand io_address)
@@ -898,12 +940,22 @@ public:
         r[0x10 | dest] = constant;
     }
 
-    void execute( BRBS, operand, operand)
+    void execute( BRBS, operand offset, operand bit)
     {
+        if (number_to_flag( bit))
+        {
+            pc += sign_extend7( offset);
+            extra_clocktick();
+        }
     }
 
-    void execute( BRBC, operand, operand)
+    void execute( BRBC, operand offset, operand bit)
     {
+        if (!number_to_flag(bit))
+        {
+            pc += sign_extend7( offset);
+            extra_clocktick();
+        }
     }
 
     void execute( BLD, operand, operand)

@@ -23,6 +23,15 @@ pre {
 #parent {
     position: relative;
 }
+
+.registers {
+    margin: 4px;
+}
+
+.registers td {
+    width:1em;
+    text-align:center;
+}
 </style>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
 <script type="text/javascript">
@@ -63,8 +72,15 @@ pre {
   };
   
   var previousRegisters = Array();
+  function displayNumberInRow( element, number)
+  {
+      $( element + ' td:nth-child(2)').text( number);
+      $( element + ' td:nth-child(3)').text( (+number).toString(16));
+  }
+  
   function updateView()
   {
+      // Update registers
       var state = emulator.getState();
       for (r = 0; r < state.r.size();++r)
       {
@@ -79,10 +95,25 @@ pre {
               $('#regR'+r).removeClass('changedRegister');
           }
           previousRegisters[r] = value;
-          $('#regR'+r + ' td:nth-child(2)').html(state.r.get(r));  
+          displayNumberInRow('#regR'+r , state.r.get(r));  
       }
       
-      $('#regPC td:nth-child(2)').text(state.pc);
+      // update flags
+      $.each( ['C', 'Z', 'N', 'V','S','H','T','I'], function( index, item){
+          var markup = '<b>'+item+'</b>';
+          if (!state.flags[item])
+          {
+              markup = item.toLowerCase();
+          }
+          $('#flag-'+item).html( markup);
+      })
+      
+      // update PC and clockticks
+      displayNumberInRow('#regPC', state.pc);
+      displayNumberInRow('#clock', state.clockTicks);
+      
+      
+      // select the source line that corresponds with the program counter.
       $('.sourceLine').removeClass('currentLine');
       if (typeof listing.addressToAssembly.get( state.pc) != 'undefined')
       {
@@ -108,9 +139,14 @@ pre {
  <div id='source'></div>
  <div id='control'>
     <button name='step' id=step onClick='singleStep();'>Step</button><input type="text" id="steps" value="1"/>
+    <table class="registers">
+        <tr>
+        <td id='flag-C'>c</td><td id='flag-Z'>z</td><td id='flag-N'>n</td><td id='flag-V'>v</td><td id='flag-S'>s</td><td id='flag-H'>h</td><td id='flag-T'>t</td><td id='flag-I'>i</td>
+        </tr>
+    </table>
     <table>
         <tr><th>register</th><th>value</th><th>hex</th></tr>
-        
+        <tr id='clock'><td>clock</td><td/><td/></tr>
         <tr id='regPC'><td>PC</td><td/><td/></tr>
         <tr id='regR0'><td>R0</td><td/><td/></tr>
         <tr id='regR1'><td>R1</td><td/><td/></tr>
