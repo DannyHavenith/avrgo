@@ -28,6 +28,11 @@ pre {
     margin: 4px;
 }
 
+td {
+    text-align: right;
+    padding: 0 5;
+}
+
 .registers td {
     width:1em;
     text-align:center;
@@ -41,12 +46,14 @@ pre {
     onRuntimeInitialized: function() {
         $.ajax( "ws2811.lss", { dataType:"text"})
             .done(function( data){ 
+                
                 jQuery.fn.scrollTo = function(elem, speed) { 
                     $(this).animate({
-                        scrollTop:  $(this).scrollTop() - $(this).offset().top + $(elem).offset().top 
+                        scrollTop:  $(this).scrollTop() - $(this).offset().top + $(elem).offset().top - 100 /* offset */
                     }, speed == undefined ? 1000 : speed); 
                     return this; 
                 };
+                
                 listing = Module.parseString( data);
                 emulator = new Module.Emulator("");
                 emulator.fillRom( listing.rom);
@@ -61,6 +68,13 @@ pre {
                             .addClass('sourceLine')
                     );
                 });
+                
+                // SPECIFIC TO THIS DEMONSTRATION
+                // run the emulator to the start of the interesting function.
+                emulator.setBreakpoint( 122);
+                emulator.run( 1000000); // run 1M ticks or until a breakpoint is hit.
+                emulator.setRam( 256, 42); // put an interesting byte at the front of the buffer
+                
                 updateView();
             })
             .fail( function (jqXHR, textStatus, errorThrown) {

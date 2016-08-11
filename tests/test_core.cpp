@@ -17,13 +17,21 @@ class CoreTest : public ::testing::Test
 {
 protected:
     avr_core core{512};
+    using decoder = typename find_decoder< avr_core,instructions::list>::type;
 
     void Execute( const std::string &instruction)
     {
-        using decoder = typename find_decoder< avr_core,instructions::list>::type;
         std::stringstream stream{instruction};
         auto listing = parse_listing( stream);
         core.rom = listing.rom;
+        decoder::decode_and_execute( core, core.fetch_instruction_word());
+    }
+
+    void Execute(uint16_t instruction)
+    {
+        core.rom.resize(2);
+        core.rom[0] = instruction;
+        core.pc = 0;
         decoder::decode_and_execute( core, core.fetch_instruction_word());
     }
 };
@@ -92,6 +100,11 @@ TEST_F( CoreTest, SBIW_happy_days)
     EXPECT_FALSE( !!core.flags.Z);
     EXPECT_FALSE( !!core.flags.C);
 
+}
+
+TEST_F( CoreTest, BREAK_throws_exception)
+{
+    ASSERT_THROW( Execute( 0b1001010110011000), avr_core::break_exception);
 }
 
 TEST_F( CoreTest, SBIW_byte_overflow)

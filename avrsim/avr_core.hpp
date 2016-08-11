@@ -294,8 +294,9 @@ public:
         set_z_and_n( result);
         flags.C = carries & 0x80;
         flags.H = carries & 0x08;
-        flags.V =   (dest & source & ~result)
-                |   (~dest & ~source & result);
+        flags.V =   ((dest & source & ~result)
+                |   (~dest & ~source & result))
+                & 0x80;
         flags.S = flags.V ^ flags.N;
 
         return result;
@@ -324,6 +325,7 @@ public:
     void skip()
     {
         auto instruction = fetch_instruction_word();
+        extra_clocktick();
         // todo skip 2-word instructions
     }
 
@@ -958,20 +960,31 @@ public:
         }
     }
 
-    void execute( BLD, operand, operand)
+    void execute( BLD, operand reg, operand bit)
     {
+        const register_t mask = 1<<bit;
+        r[reg] = (r[reg] & ~mask) | ((flags.T)?mask:0);
     }
 
-    void execute( BST, operand, operand)
+    void execute( BST, operand reg, operand bit)
     {
+        flags.T = r[reg] & ( 1<<bit);
     }
 
-    void execute( SBRC, operand, operand)
+    void execute( SBRC, operand reg, operand bit)
     {
+        if (not (r[reg]&(1<<bit)))
+        {
+            skip();
+        }
     }
 
-    void execute( SBRS, operand, operand)
+    void execute( SBRS, operand reg, operand bit)
     {
+        if (r[reg] & (1<<bit))
+        {
+            skip();
+        }
     }
 private:
     void extra_clocktick()

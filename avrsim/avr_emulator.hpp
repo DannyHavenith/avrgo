@@ -59,7 +59,7 @@ public:
         return *this;
     }
 
-    static constexpr uint16_t break_instruction = 0b1001010110011000;
+    static constexpr instruction_t break_instruction = 0b1001010110011000;
 
     void execute_instruction( instruction_t instruction)
     {
@@ -156,7 +156,7 @@ public:
     {
         if (rom[address] == break_instruction)
         {
-            // will move a NOP instruction if the instruction was not
+            // this will move a NOP instruction if the instruction was not
             // in original_instructions;
             rom[address] = original_instructions[address];
         }
