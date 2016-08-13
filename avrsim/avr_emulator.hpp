@@ -54,7 +54,7 @@ public:
         rom = newRom;
     }
 
-    const avr_state &getState() const
+    const avr_state getState() const
     {
         return *this;
     }

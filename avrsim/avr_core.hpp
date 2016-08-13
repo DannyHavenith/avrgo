@@ -110,60 +110,6 @@ public:
     // the following functions should become part of
     // a ram-model aspect.
 
-    pointer_t get_rampd_offset() const
-    {
-        return 0;
-    }
-
-    // fetch the contents of the RAMPZ register in io space.
-    pointer_t get_rampz_offset() const
-    {
-        return get_io( rampz_io_address);
-    }
-
-    // todo: implement
-    pointer_t get_rampx_offset() const
-    {
-        return 0;
-    }
-
-    // todo: implement
-    pointer_t get_rampy_offset() const
-    {
-        return 0;
-    }
-
-    register_t &get_io_address( uint16_t address)
-    {
-        return ram[address + io_offset];
-    }
-
-    const register_t &get_io_address( uint16_t address) const
-    {
-        return ram[address + io_offset];
-    }
-
-    void set_io( operand address, register_t value)
-    {
-        get_io_address( address) = value;
-    }
-
-    register_t get_io( operand address) const
-    {
-        return get_io_address( address);
-    }
-
-    void assign16( operand reg, boost::int16_t value)
-    {
-        r[reg] = value;
-        r[reg+1] = value >> 8;
-    }
-
-    unsigned16 get16( operand reg)
-    {
-        return r[reg] + (static_cast<unsigned16>(r[reg+1]) << 8);
-    }
-
     void execute( NOP)
     {
         // do nothing
@@ -176,41 +122,6 @@ public:
         r[2*dest + 1] = r[2*source + 1];
     }
 
-    void set_z_and_n( register_t result)
-    {
-        flags.Z = result == 0;
-        flags.N = result & 0x80;
-    }
-
-    void set_flags_after_multiply( signed16 result)
-    {
-        flags.Z = result == 0;
-        flags.C = result & 0x8000;
-    }
-
-    unsigned16 unsigned_multiply( operand dest, operand source)
-    {
-        unsigned16 result = r[dest+16] * r[source+16];
-        set_flags_after_multiply( result);
-        extra_clocktick();
-        return result;
-    }
-
-    signed16 signed_multiply( operand dest, operand source)
-    {
-        signed16 result = signed_(r[dest+16]) * signed_(r[source+16]);
-        set_flags_after_multiply( result);
-        extra_clocktick();
-        return result;
-    }
-
-    signed16 signed_unsigned_multiply( operand dest, operand source)
-    {
-        boost::int16_t result = signed_( r[dest+16]) * r[source+16];
-        set_flags_after_multiply( result);
-        extra_clocktick();
-        return result;
-    }
 
     void execute( MULS, operand dest, operand source)
     {
@@ -239,69 +150,6 @@ public:
         assign16( 0, signed_unsigned_multiply( dest, source) << 1);
     }
 
-    unsigned8 subtract( unsigned16 dest, unsigned16 source)
-    {
-        unsigned8 result = dest - source;
-
-        // calculate carry and half-carry
-        // we're doing the common subexpression elimination, just
-        // in case our compiler doesn't
-        unsigned16 carries =
-                    (~dest & source)
-                |   (source & result)
-                |   (result & ~dest);
-        flags.C = carries & 0x80;
-        flags.H = carries & 0x08;
-        flags.V =  (( dest & ~source & ~result)
-                |   (~dest &  source &  result))
-                & 0x80;
-        flags.S = flags.V ^ flags.N;
-        set_z_and_n( result);
-
-        return result;
-    }
-
-    signed16 subtract16( signed16 left, signed16 right)
-    {
-        signed16 result = left - right;
-        flags.C = (left >= 0) and (result < 0);
-        flags.N = result < 0;
-        flags.V = (left < 0) and (result >= 0); // check
-        flags.Z = result == 0;
-        flags.S = !flags.N != !flags.V;
-        return result;
-    }
-
-    signed16 add16( signed16 left, signed16 right)
-    {
-        signed16 result = left + right;
-        flags.C = result >= 0 and left < 0;
-        flags.Z = result == 0;
-        flags.N = result < 0;
-        flags.V = result < 0 and left >= 0;
-        flags.S = !flags.N != !flags.V;
-        return result;
-    }
-
-    unsigned8 add( unsigned16 dest, unsigned16 source)
-    {
-        unsigned8 result = dest + source;
-        unsigned16 carries =
-                    (source & dest)
-                |   (source & ~result)
-                |   (dest & ~result);
-
-        set_z_and_n( result);
-        flags.C = carries & 0x80;
-        flags.H = carries & 0x08;
-        flags.V =   ((dest & source & ~result)
-                |   (~dest & ~source & result))
-                & 0x80;
-        flags.S = flags.V ^ flags.N;
-
-        return result;
-    }
-
     void execute( CPC, operand dest, operand source)
     {
         // ignore subtract results, change flags only
@@ -320,13 +168,6 @@ public:
     void execute( ADD, operand dest, operand source)
     {
         r[dest] = add( r[dest], r[source]);
-    }
-
-    void skip()
-    {
-        auto instruction = fetch_instruction_word();
-        extra_clocktick();
-        // todo skip 2-word instructions
     }
 
     void execute( CPSE, operand dest, operand source)
@@ -352,14 +193,11 @@ public:
         r[dest] = add( r[dest], flags.C?((unsigned16)(r[source]+1)):r[source]);
     }
 
-    unsigned8 set_logical_flags( unsigned8 result)
+    unsigned16 fetch_instruction_word()
     {
-        set_z_and_n( result);
-        flags.V = 0;
-        flags.S = flags.N;
-
-        return result;
+        return rom[pc++];
     }
+
 
     void execute( AND, operand dest, operand source)
     {
@@ -409,11 +247,13 @@ public:
     void execute( LDD_Y, operand dest, operand offset)
     {
         r[dest] = ram[ get16( register_Y) + offset];
+        extra_clocktick();
     }
 
     void execute( LDD_Z, operand dest, operand offset)
     {
         r[dest] = ram[ get16( register_Z) + offset];
+        extra_clocktick();
     }
 
     void execute( STD_Z, operand source, operand offset)
@@ -424,11 +264,6 @@ public:
     void execute( STD_Y, operand source, operand offset)
     {
         ram[ get16( register_Y) + offset] = r[source];
-    }
-
-    unsigned16 fetch_instruction_word()
-    {
-        return rom[pc++];
     }
 
     void execute( LDS, operand destination)
@@ -450,12 +285,14 @@ public:
     {
         execute( LDD_Z(), dest, 0);
         increase16( register_Z);
+        extra_clocktick();
     }
 
     void execute( LD_Z_dec, operand dest)
     {
         decrease16( register_Z);
         execute( LDD_Z(), dest, 0);
+        extra_clocktick();
     }
 
     void execute( LD_Z_min, operand dest)
@@ -463,15 +300,7 @@ public:
         decrease16( register_Z);
         execute( LDD_Z(), dest, 0);
         increase16( register_Z);
-    }
-
-    unsigned8 fetch_rom_byte( pointer_t address) const
-    {
-        // ROM byte addressing emulates little endian
-        // (low byte is address.0 == 0)
-        return (address& 0x01)?
-                        (rom[address/2] >> 8)
-                    :   (rom[address/2]);
+        extra_clocktick();
     }
 
     void execute( LPM_Z, operand dest)
@@ -502,17 +331,20 @@ public:
     {
         execute( LDD_Y(), dest, 0);
         increase16( register_Y);
+        extra_clocktick();
     }
 
     void execute( LD_Y_dec, operand dest)
     {
         decrease16( register_Y);
         execute( LDD_Y(), dest, 0);
+        extra_clocktick();
     }
 
     void execute( LD_X, operand dest)
     {
         r[dest] = ram[ get16( register_X)];
+        extra_clocktick();
     }
 
     void execute( LD_X_inc, operand dest)
@@ -554,17 +386,6 @@ public:
         execute( STD_Z(), source, 0);
     }
 
-//    void execute( ST_Z_min, operand source)
-//    {
-//        decrease16( register_Z);
-//        execute( STD_Z(), source, 0);
-//        increase16( register_Z);
-//    }
-
-    void execute( unk1)
-    {
-    }
-
     void execute( ST_Y_inc, operand source)
     {
         execute( STD_Y(), source, 0);
@@ -576,13 +397,6 @@ public:
         decrease16(register_Y);
         execute( STD_Y(), source, 0);
     }
-
-//    void execute( ST_Y_min, operand source)
-//    {
-//        decrease16(register_Y);
-//        execute( STD_Y(), source, 0);
-//        increase16( register_Y);
-//    }
 
     void execute( ST_Y, operand source)
     {
@@ -605,14 +419,6 @@ public:
         decrease16( register_X);
         execute( ST_X(), source);
     }
-
-//    void execute( ST_X_min, operand source)
-//    {
-//        decrease16( register_X);
-//        execute( ST_X(), source);
-//        increase16( register_X);
-//    }
-
 
     void execute( PUSH, operand dest)
     {
@@ -690,22 +496,6 @@ public:
         flags.V = r[dest] == 0x7f;
     }
 
-    flags_t::flag_t &number_to_flag( operand bit)
-    {
-        switch (bit)
-        {
-        case 0: return flags.C;
-        case 1: return flags.Z;
-        case 2: return flags.N;
-        case 3: return flags.V;
-        case 4: return flags.S;
-        case 5: return flags.H;
-        case 6: return flags.T;
-        default: return flags.I;
-        }
-
-    }
-
     void execute( BSET, operand bit)
     {
         number_to_flag( bit) = 0x80;
@@ -779,12 +569,6 @@ public:
         extra_clockticks( is_xmega?2:3);
     }
 
-    bool is_sleep_enabled()
-    {
-        // todo: implement MCUCR
-        return true;
-    }
-
     void execute( SLEEP)
     {
         if (is_sleep_enabled())
@@ -837,24 +621,6 @@ public:
     void execute( ESPM)
     {
         // todo: implement
-    }
-
-    int16_t sign_extend12( operand input)
-    {
-        return (( static_cast<int16_t>(input) + 0x0800) & 0x0FFF) - 0x0800;
-    }
-
-    int8_t sign_extend7( operand input)
-    {
-        return ((static_cast<int8_t>(input) + 0x40) & 0x7F) - 0x40;
-    }
-
-    // not used yet. should replace the two functions above.
-    template< typename Integer, int sourceBits>
-    Integer sign_extend( Integer source)
-    {
-        constexpr Integer upperBit = (1 << (sourceBits - 1));
-        return ((source ^ upperBit) & ((1<< sourceBits)-1)) - upperBit;
     }
 
     void execute( JMP, operand upper_bits)
@@ -986,6 +752,7 @@ public:
             skip();
         }
     }
+
 private:
     void extra_clocktick()
     {
@@ -996,6 +763,234 @@ private:
     {
         clock_ticks += ticks;
     }
+    int16_t sign_extend12( operand input)
+    {
+        return (( static_cast<int16_t>(input) + 0x0800) & 0x0FFF) - 0x0800;
+    }
+
+    int8_t sign_extend7( operand input)
+    {
+        return ((static_cast<int8_t>(input) + 0x40) & 0x7F) - 0x40;
+    }
+
+    // not used yet. should replace the two functions above.
+    template< typename Integer, int sourceBits>
+    Integer sign_extend( Integer source)
+    {
+        constexpr Integer upperBit = (1 << (sourceBits - 1));
+        return ((source ^ upperBit) & ((1<< sourceBits)-1)) - upperBit;
+    }
+
+    bool is_sleep_enabled()
+    {
+        // todo: implement MCUCR
+        return true;
+    }
+
+    flags_t::flag_t &number_to_flag( operand bit)
+    {
+        switch (bit)
+        {
+        case 0: return flags.C;
+        case 1: return flags.Z;
+        case 2: return flags.N;
+        case 3: return flags.V;
+        case 4: return flags.S;
+        case 5: return flags.H;
+        case 6: return flags.T;
+        default: return flags.I;
+        }
+
+    }
+
+    unsigned8 fetch_rom_byte( pointer_t address) const
+    {
+        // ROM byte addressing emulates little endian
+        // (low byte is address.0 == 0)
+        return (address& 0x01)?
+                        (rom[address/2] >> 8)
+                    :   (rom[address/2]);
+    }
+
+    unsigned8 set_logical_flags( unsigned8 result)
+    {
+        set_z_and_n( result);
+        flags.V = 0;
+        flags.S = flags.N;
+
+        return result;
+    }
+
+    void skip()
+    {
+        auto instruction = fetch_instruction_word();
+        extra_clocktick();
+
+        if (
+                is_instruction<CALL>( instruction)
+            |   is_instruction<JMP> (instruction)
+            |   is_instruction<LDS> (instruction)
+            |   is_instruction<STS> (instruction)
+         )
+        {
+            fetch_instruction_word();
+            extra_clocktick();
+        }
+    }
+
+    unsigned8 subtract( unsigned16 dest, unsigned16 source)
+    {
+        unsigned8 result = dest - source;
+
+        // calculate carry and half-carry
+        // we're doing the common subexpression elimination, just
+        // in case our compiler doesn't
+        unsigned16 carries =
+                    (~dest & source)
+                |   (source & result)
+                |   (result & ~dest);
+        flags.C = carries & 0x80;
+        flags.H = carries & 0x08;
+        flags.V =  (( dest & ~source & ~result)
+                |   (~dest &  source &  result))
+                & 0x80;
+        flags.S = flags.V ^ flags.N;
+        set_z_and_n( result);
+
+        return result;
+    }
+
+    signed16 subtract16( signed16 left, signed16 right)
+    {
+        signed16 result = left - right;
+        flags.C = (left >= 0) and (result < 0);
+        flags.N = result < 0;
+        flags.V = (left < 0) and (result >= 0); // check
+        flags.Z = result == 0;
+        flags.S = !flags.N != !flags.V;
+        return result;
+    }
+
+    signed16 add16( signed16 left, signed16 right)
+    {
+        signed16 result = left + right;
+        flags.C = result >= 0 and left < 0;
+        flags.Z = result == 0;
+        flags.N = result < 0;
+        flags.V = result < 0 and left >= 0;
+        flags.S = !flags.N != !flags.V;
+        return result;
+    }
+
+    unsigned8 add( unsigned16 dest, unsigned16 source)
+    {
+        unsigned8 result = dest + source;
+        unsigned16 carries =
+                    (source & dest)
+                |   (source & ~result)
+                |   (dest & ~result);
+
+        set_z_and_n( result);
+        flags.C = carries & 0x80;
+        flags.H = carries & 0x08;
+        flags.V =   ((dest & source & ~result)
+                |   (~dest & ~source & result))
+                & 0x80;
+        flags.S = flags.V ^ flags.N;
+
+        return result;
+    }
+
+    void set_z_and_n( register_t result)
+    {
+        flags.Z = result == 0;
+        flags.N = result & 0x80;
+    }
+
+    void set_flags_after_multiply( signed16 result)
+    {
+        flags.Z = result == 0;
+        flags.C = result & 0x8000;
+    }
+
+    unsigned16 unsigned_multiply( operand dest, operand source)
+    {
+        unsigned16 result = r[dest+16] * r[source+16];
+        set_flags_after_multiply( result);
+        extra_clocktick();
+        return result;
+    }
+
+    signed16 signed_multiply( operand dest, operand source)
+    {
+        signed16 result = signed_(r[dest+16]) * signed_(r[source+16]);
+        set_flags_after_multiply( result);
+        extra_clocktick();
+        return result;
+    }
+
+    signed16 signed_unsigned_multiply( operand dest, operand source)
+    {
+        boost::int16_t result = signed_( r[dest+16]) * r[source+16];
+        set_flags_after_multiply( result);
+        extra_clocktick();
+        return result;
+    }
+
+    pointer_t get_rampd_offset() const
+    {
+        return 0;
+    }
+
+    // fetch the contents of the RAMPZ register in io space.
+    pointer_t get_rampz_offset() const
+    {
+        return get_io( rampz_io_address);
+    }
+
+    // todo: implement
+    pointer_t get_rampx_offset() const
+    {
+        return 0;
+    }
+
+    // todo: implement
+    pointer_t get_rampy_offset() const
+    {
+        return 0;
+    }
+
+    register_t &get_io_address( uint16_t address)
+    {
+        return ram[address + io_offset];
+    }
+
+    const register_t &get_io_address( uint16_t address) const
+    {
+        return ram[address + io_offset];
+    }
+
+    void set_io( operand address, register_t value)
+    {
+        get_io_address( address) = value;
+    }
+
+    register_t get_io( operand address) const
+    {
+        return get_io_address( address);
+    }
+
+    void assign16( operand reg, boost::int16_t value)
+    {
+        r[reg] = value;
+        r[reg+1] = value >> 8;
+    }
+
+    unsigned16 get16( operand reg)
+    {
+        return r[reg] + (static_cast<unsigned16>(r[reg+1]) << 8);
+    }
+
 };
 
 }

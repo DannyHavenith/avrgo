@@ -17,10 +17,10 @@ add_executable(
 
 target_link_libraries( 
     unittests
-    
+
     avrsim
-    ${GTEST_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
+    ${GTEST_LIBRARIES}
     )
     
 

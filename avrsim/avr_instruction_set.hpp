@@ -59,24 +59,19 @@ struct ELPM_Z_inc:instruction< 1,0,0,1, 0,0,0,d, d,d,d,d, 0,1,1,1 > {};
 struct LDD_Y    : instruction< 1,0,q,0, q,q,0,d, d,d,d,d, 1,q,q,q > {};
 struct LD_Y_inc : instruction< 1,0,0,1, 0,0,0,d, d,d,d,d, 1,0,0,1 > {};
 struct LD_Y_dec : instruction< 1,0,0,1, 0,0,0,d, d,d,d,d, 1,0,1,0 > {};
-//struct LD_Y_min : instruction< 1,0,0,1, 0,0,0,d, d,d,d,d, 1,0,1,1 > {};
 struct LD_X     : instruction< 1,0,0,1, 0,0,0,d, d,d,d,d, 1,1,0,0 > {};
 struct LD_X_inc : instruction< 1,0,0,1, 0,0,0,d, d,d,d,d, 1,1,0,1 > {};
 struct LD_X_dec : instruction< 1,0,0,1, 0,0,0,d, d,d,d,d, 1,1,1,0 > {};
-//struct LD_X_min : instruction< 1,0,0,1, 0,0,0,d, d,d,d,d, 1,1,1,1 > {};
 struct POP      : instruction< 1,0,0,1, 0,0,0,d, d,d,d,d, 1,1,1,1 > {};
 struct STS      : instruction< 1,0,0,1, 0,0,1,r, r,r,r,r, 0,0,0,0 > {};
 struct ST_Z_inc : instruction< 1,0,0,1, 0,0,1,r, r,r,r,r, 0,0,0,1 > {};
 struct ST_Z_dec : instruction< 1,0,0,1, 0,0,1,r, r,r,r,r, 0,0,1,0 > {};
-//struct ST_Z_min : instruction< 1,0,0,1, 0,0,1,r, r,r,r,r, 0,0,1,1 > {};
 struct unk1     : instruction< 1,0,0,1, 0,0,1,r, r,r,r,r, 0,1,x,x > {};
 struct ST_Y_inc : instruction< 1,0,0,1, 0,0,1,r, r,r,r,r, 1,0,0,1 > {};
 struct ST_Y_dec : instruction< 1,0,0,1, 0,0,1,r, r,r,r,r, 1,0,1,0 > {};
-//struct ST_Y_min : instruction< 1,0,0,1, 0,0,1,r, r,r,r,r, 1,0,1,1 > {};
 struct ST_Y     : instruction< 1,0,0,1, 0,0,1,r, r,r,r,r, 1,0,0,0 > {};
 struct ST_X_inc : instruction< 1,0,0,1, 0,0,1,r, r,r,r,r, 1,1,0,1 > {};
 struct ST_X_dec : instruction< 1,0,0,1, 0,0,1,r, r,r,r,r, 1,1,1,0 > {};
-//struct ST_X_min : instruction< 1,0,0,1, 0,0,1,r, r,r,r,r, 1,1,1,1 > {};
 struct ST_X     : instruction< 1,0,0,1, 0,0,1,r, r,r,r,r, 1,1,0,0 > {};
 struct PUSH     : instruction< 1,0,0,1, 0,0,1,d, d,d,d,d, 1,1,1,1 > {};
 struct COM      : instruction< 1,0,0,1, 0,1,0,d, d,d,d,d, 0,0,0,0 > {};
@@ -154,7 +149,6 @@ typedef mpl::vector<
     LDS,
     LD_Z_inc,
     LD_Z_dec,
-//    LD_Z_min,
     LPM,
     LPM_Z,
     LPM_Z_inc
@@ -166,32 +160,24 @@ typedef mpl::vector<
     ELPM_Z_inc,
     LD_Y_inc,
     LD_Y_dec,
-//    LD_Y_min,
-//    LD_Y,
     LD_X_inc,
     LD_X_dec,
-//    LD_X_min,
     LD_X,
     POP,
     STS,
     ST_Z_inc,
     ST_Z_dec,
-//    ST_Z_min,
-//    unk1,
     ST_Y_inc,
     ST_Y_dec,
-//    ST_Y_min,
     ST_Y,
     ST_X_inc,
     ST_X_dec,
-//    ST_X_min,
     ST_X,
     PUSH,
     COM,
     NEG,
     SWAP,
     INC,
-//    unk2,
     ASR,
     LSR,
     ROR
@@ -240,7 +226,6 @@ struct LDS_direct {};
 struct STS_direct {};
 
 // create a list that enumerates all avr instructions
-
 
 
 /// list of all known avr instructions.

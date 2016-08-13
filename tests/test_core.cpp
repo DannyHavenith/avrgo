@@ -24,6 +24,7 @@ protected:
         std::stringstream stream{instruction};
         auto listing = parse_listing( stream);
         core.rom = listing.rom;
+        core.pc = 0;
         decoder::decode_and_execute( core, core.fetch_instruction_word());
     }
 
@@ -36,6 +37,24 @@ protected:
     }
 };
 
+TEST_F( CoreTest, skip_skips_2_words)
+{
+    core.r[19] = 0x80;
+
+    Execute(
+            "00:   37 ff           sbrs    r19, 7\n"
+            "02:   30 93 96 01     sts 0x0196, r19"
+            );
+
+    ASSERT_EQ( 3, core.pc);
+
+    Execute(
+            "00:   37 ff           sbrs    r19, 7\n"
+            "02:   48 e0           ldi r20, 0x08"
+            );
+
+    ASSERT_EQ( 2, core.pc);
+}
 
 TEST_F( CoreTest, st_x_inc)
 {

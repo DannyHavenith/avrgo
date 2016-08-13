@@ -4,18 +4,24 @@
 pre {
     margin: .2em;
 }
-.odd {
-    background-color: aliceblue;
-}
+
 #source {
     float: left;
     overflow: auto;
     height: 100vh;
     position: relative;
 }
-.currentLine {
-    background-color: highlight;
+
+#source pre:nth-child(odd)
+{
+    background-color: aliceblue;
 }
+
+#source .currentLine {
+    background-color: highlight !important;
+}
+
+
 .changedRegister {
     background-color: highlight;
 }
@@ -42,6 +48,7 @@ td {
 <script type="text/javascript">
   var emulator = {};
   var listing = {};
+  var listingBackup = {};
   var Module = {
     onRuntimeInitialized: function() {
         $.ajax( "ws2811.lss", { dataType:"text"})
@@ -54,7 +61,9 @@ td {
                     return this; 
                 };
                 
+                listingBackup = Module.parseString( data);
                 listing = Module.parseString( data);
+                
                 emulator = new Module.Emulator("");
                 emulator.fillRom( listing.rom);
                 var lines = data.split("\n");
@@ -64,7 +73,6 @@ td {
                     sourceDiv.append($('<pre/>')
                             .text(item)
                             .attr('id','L'+i)
-                            .addClass(i%2?'odd':'even')
                             .addClass('sourceLine')
                     );
                 });
@@ -86,10 +94,17 @@ td {
   };
   
   var previousRegisters = Array();
-  function displayNumberInRow( element, number)
+  function displayNumberInRow( element, number, showDouble)
   {
+     
+      
       $( element + ' td:nth-child(2)').text( number);
       $( element + ' td:nth-child(3)').text( (+number).toString(16));
+      if (showDouble)
+      {
+          $( element + ' td:nth-child(2)').append( " (" + 2*number + ")");
+          $( element + ' td:nth-child(3)').append( " (" + (2*number).toString(16)+")");
+      }
   }
   
   function updateView()
@@ -123,7 +138,7 @@ td {
       })
       
       // update PC and clockticks
-      displayNumberInRow('#regPC', state.pc);
+      displayNumberInRow('#regPC', state.pc, true);
       displayNumberInRow('#clock', state.clockTicks);
       
       

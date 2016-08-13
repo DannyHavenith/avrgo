@@ -66,6 +66,106 @@ struct operands : mpl::copy_if<
 {
 };
 
+namespace detail
+{
+    unsigned int opcode( unsigned int value)
+    {
+        return (value <= 1?1:0);
+    }
+
+    unsigned int if_opcode( unsigned int value)
+    {
+        return (value <= 1?value:0);
+    }
+}
+
+template< typename Instruction>
+unsigned int opcode_pattern_mask()
+{
+    using detail::opcode;
+    unsigned int value = 0;
+    value |= opcode( mpl::at_c<Instruction, 15>::type::value);
+    value <<= 1;
+    value |= opcode( mpl::at_c<Instruction, 14>::type::value);
+    value <<= 1;
+    value |= opcode( mpl::at_c<Instruction, 13>::type::value);
+    value <<= 1;
+    value |= opcode( mpl::at_c<Instruction, 12>::type::value);
+    value <<= 1;
+    value |= opcode( mpl::at_c<Instruction, 11>::type::value);
+    value <<= 1;
+    value |= opcode( mpl::at_c<Instruction, 10>::type::value);
+    value <<= 1;
+    value |= opcode( mpl::at_c<Instruction, 9>::type::value);
+    value <<= 1;
+    value |= opcode( mpl::at_c<Instruction, 8>::type::value);
+    value <<= 1;
+    value |= opcode( mpl::at_c<Instruction, 7>::type::value);
+    value <<= 1;
+    value |= opcode( mpl::at_c<Instruction, 6>::type::value);
+    value <<= 1;
+    value |= opcode( mpl::at_c<Instruction, 5>::type::value);
+    value <<= 1;
+    value |= opcode( mpl::at_c<Instruction, 4>::type::value);
+    value <<= 1;
+    value |= opcode( mpl::at_c<Instruction, 3>::type::value);
+    value <<= 1;
+    value |= opcode( mpl::at_c<Instruction, 2>::type::value);
+    value <<= 1;
+    value |= opcode( mpl::at_c<Instruction, 1>::type::value);
+    value <<= 1;
+    value |= opcode( mpl::at_c<Instruction, 0>::type::value);
+
+    return value;
+}
+
+template< typename Instruction>
+unsigned int opcode_pattern()
+{
+    unsigned int value = 0;
+    using detail::if_opcode;
+
+    value |= if_opcode( mpl::at_c<Instruction, 15>::type::value);
+    value <<= 1;
+    value |= if_opcode( mpl::at_c<Instruction, 14>::type::value);
+    value <<= 1;
+    value |= if_opcode( mpl::at_c<Instruction, 13>::type::value);
+    value <<= 1;
+    value |= if_opcode( mpl::at_c<Instruction, 12>::type::value);
+    value <<= 1;
+    value |= if_opcode( mpl::at_c<Instruction, 11>::type::value);
+    value <<= 1;
+    value |= if_opcode( mpl::at_c<Instruction, 10>::type::value);
+    value <<= 1;
+    value |= if_opcode( mpl::at_c<Instruction, 9>::type::value);
+    value <<= 1;
+    value |= if_opcode( mpl::at_c<Instruction, 8>::type::value);
+    value <<= 1;
+    value |= if_opcode( mpl::at_c<Instruction, 7>::type::value);
+    value <<= 1;
+    value |= if_opcode( mpl::at_c<Instruction, 6>::type::value);
+    value <<= 1;
+    value |= if_opcode( mpl::at_c<Instruction, 5>::type::value);
+    value <<= 1;
+    value |= if_opcode( mpl::at_c<Instruction, 4>::type::value);
+    value <<= 1;
+    value |= if_opcode( mpl::at_c<Instruction, 3>::type::value);
+    value <<= 1;
+    value |= if_opcode( mpl::at_c<Instruction, 2>::type::value);
+    value <<= 1;
+    value |= if_opcode( mpl::at_c<Instruction, 1>::type::value);
+    value <<= 1;
+    value |= if_opcode( mpl::at_c<Instruction, 0>::type::value);
+
+    return value;
+}
+
+template< typename Instruction>
+bool is_instruction( uint16_t value)
+{
+    return (value & opcode_pattern_mask<Instruction>()) == opcode_pattern<Instruction>();
+}
+
 }
 
 
