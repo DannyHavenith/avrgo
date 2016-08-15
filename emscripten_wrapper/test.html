@@ -9,6 +9,7 @@ pre {
     float: left;
     overflow: auto;
     height: 100vh;
+    width: 100%;
     position: relative;
 }
 
@@ -27,13 +28,28 @@ pre {
 }
 
 #parent {
-    position: relative;
+    /* position: relative; */
 }
-
+#control {
+    position:relative;
+}
 .registers {
     margin: 4px;
 }
 
+.width-set {
+    float: left;
+    margin: 0;
+}
+.contains-sources {
+    width: 70%;
+}
+.contains-controls {
+    width: 30%;
+}
+.clear {
+    clear:both;
+}
 td {
     text-align: right;
     padding: 0 5;
@@ -165,7 +181,10 @@ td {
  </head>
  <body>
  <div id='parent'>
+ <div id="left" class='width-set contains-sources'>
  <div id='source'></div>
+ </div>
+ <div id='right' class='width-set contains-controls'>
  <div id='control'>
     <button name='step' id=step onClick='singleStep();'>Step</button><input type="text" id="steps" value="1"/>
     <table class="registers">
@@ -211,6 +230,8 @@ td {
         <tr id='regR31'><td>R31</td><td/><td/></tr>
     </table>
  </div>
+ </div>
+ <div class='clear'></div>
  </div>
  </body>
 </html>

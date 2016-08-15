@@ -26,7 +26,7 @@
 namespace avrsim
 {
     template<typename Core>
-    using precompiled_function = void (uint16_t arg1, uint16_t arg2, Core &core);
+    using precompiled_function = void (Core &core, uint16_t arg1, uint16_t arg2);
 
     template<typename Core>
     struct precompiled_instruction
@@ -53,7 +53,7 @@ namespace avrsim
     template< typename Core, typename Instruction>
     struct precompiled_function_implementation< Core, Instruction, 0>
     {
-        static void execute(uint16_t, uint16_t, Core &core)
+        static void execute(Core &core, uint16_t, uint16_t)
         {
             core.execute( Instruction{});
         }
@@ -62,7 +62,7 @@ namespace avrsim
     template< typename Core, typename Instruction>
     struct precompiled_function_implementation< Core, Instruction, 1>
     {
-        static void execute(uint16_t arg1, uint16_t, Core &core)
+        static void execute(Core &core, uint16_t arg1, uint16_t)
         {
             core.execute( Instruction{}, arg1);
         }
@@ -71,7 +71,7 @@ namespace avrsim
     template< typename Core, typename Instruction>
     struct precompiled_function_implementation< Core, Instruction, 2>
     {
-        static void execute(uint16_t arg1, uint16_t arg2, Core &core)
+        static void execute(Core &core, uint16_t arg1, uint16_t arg2)
         {
             core.execute( Instruction{}, arg1, arg2);
         }
@@ -101,13 +101,15 @@ namespace avrsim
     };
 
     /**
-     * The actual pre-compilation function. Given an instruction word and
+     * The actual pre-compilation function.
+     *
+     *  Given an instruction word and
      *  a AVR Core implementation type, this will return a struct with
      *  the decoded arguments and a pointer to a function that will call
      *  the right member function of the AVR Core implementation object.
      */
     template< typename Core>
-    precompiled_instruction<Core> pre_compile( uint16_t instruction)
+    precompiled_instruction<Core> precompile( uint16_t instruction)
     {
         // the trick used here is that a precompiler is also a Core implementation
         // (it implements execute() for all Instruction types).
@@ -116,7 +118,8 @@ namespace avrsim
         // The decoder will generate a struct with function pointer and arguments
         // in its execute() member function, which is then harvested and
         // returned.
-        using decoder = typename find_decoder< precompiler<Core>, instructions::list>::type;
+        using decoder
+            = typename find_decoder< precompiler<Core>, instructions::list>::type;
         precompiler<Core> compiler;
         decoder::decode_and_execute( compiler, instruction);
         return compiler.get_result();

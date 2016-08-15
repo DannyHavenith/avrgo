@@ -8,6 +8,7 @@
 
 #include "emscripten/bind.h"
 #include "avrsim/avr_emulator.hpp"
+#include "avrsim/precompiled_emulator.hpp"
 #include "avrsim/list_parser.hpp"
 #include <sstream>
 #include <memory>
@@ -15,7 +16,8 @@
 
 using namespace emscripten;
 using namespace avrsim;
-using emulator = avr_emulator<avr_core>;
+//using emulator = avr_emulator<avr_core>;
+using emulator = precompiled_emulator<avr_core>;
 
 listing parseString( const std::string &assembly)
 {
@@ -32,7 +34,7 @@ std::vector<uint8_t> testReturnVector()
 emulator *makeEmulator( const std::string &assembly)
 {
     auto listing = parseString( assembly);
-    auto e = new emulator{ 512};
+    auto e = new emulator{ 16*1024};
     e->fillRom( listing.rom);
     return e;
 }
@@ -90,7 +92,6 @@ EMSCRIPTEN_BINDINGS( avrjs) {
 
     class_<emulator>("Emulator")
         .constructor(&makeEmulator, allow_raw_pointers())
-        .function("initialize", &emulator::initialize)
         .function("fillRom",    &emulator::fillRom)
         .function("run",        &emulator::run)
         .function("getPc",      &emulator::getPc)

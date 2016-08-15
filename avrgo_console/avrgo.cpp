@@ -13,11 +13,15 @@
 #include <fstream>
 #include <typeinfo>
 #include <boost/cstdint.hpp>
+#include <boost/timer/timer.hpp>
+
 #include "avrsim/avr_instruction_set.hpp"
 #include "avrsim/decoder.hpp"
 #include "avrsim/avr_core.hpp"
 #include "avrsim/instruction_names.hpp"
 #include "avrsim/list_parser.hpp"
+#include "avrsim/avr_emulator.hpp"
+#include "avrsim/precompiled_emulator.hpp"
 
 using boost::uint16_t;
 #include <boost/fusion/algorithm/iteration/for_each.hpp>
@@ -90,14 +94,12 @@ int main(int argc, char *argv[])
             std::cout << "executing " << argv[1] << '\n';
             std::ifstream assemblyfile{ argv[1]};
             auto listing = parse_listing( assemblyfile);
-
-
-            avr_core avr{512};
-            avr.rom = listing.rom;
-            using decoder = typename find_decoder< avr_core, instructions::list>::type;
-            for (auto count = 100000000UL; count; count--)
+            precompiled_emulator<avr_core> emulator{16*1024};
+            //avr_emulator<avr_core> emulator{16*1024};
+            emulator.fillRom( listing.rom);
             {
-                decoder::decode_and_execute( avr, avr.fetch_instruction_word());
+                boost::timer::auto_cpu_timer t;
+                emulator.run( 100000000);
             }
             std::cout << "ready\n";
             return 0;

@@ -14,6 +14,10 @@
 
 namespace avrsim {
 
+/**
+ * This implements an emulator that will decode avr instructions on the
+ * fly and then feeds them to the avr core.
+ */
 template< typename core = avr_core>
 class avr_emulator : private core
 {

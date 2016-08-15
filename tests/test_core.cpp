@@ -61,7 +61,7 @@ TEST_F( CoreTest, st_x_inc)
     core.r[1] = 42;
     core.r[26] = 255;
     core.r[27] = 1;
-    core.ram[0x1FF] = 1;
+    core.ram( 0x1FF)     = 1;
     core.pc = 0;
     core.flags = flags_t{};
 
@@ -69,7 +69,7 @@ TEST_F( CoreTest, st_x_inc)
 
     EXPECT_EQ( 0, core.r[26]);
     EXPECT_EQ( 2, core.r[27]);
-    EXPECT_EQ( 42, core.ram[0x1FF]);
+    EXPECT_EQ( 42, core.ram( 0x1FF)    );
     EXPECT_EQ( flags_t{}, core.flags);
 }
 

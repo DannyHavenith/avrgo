@@ -246,29 +246,29 @@ public:
 
     void execute( LDD_Y, operand dest, operand offset)
     {
-        r[dest] = ram[ get16( register_Y) + offset];
+        r[dest] = ram( get16( register_Y) + offset)    ;
         extra_clocktick();
     }
 
     void execute( LDD_Z, operand dest, operand offset)
     {
-        r[dest] = ram[ get16( register_Z) + offset];
+        r[dest] = ram( get16( register_Z) + offset)    ;
         extra_clocktick();
     }
 
     void execute( STD_Z, operand source, operand offset)
     {
-        ram[ get16( register_Z) + get_rampz_offset() + offset] = r[source];
+        ram( get16( register_Z) + get_rampz_offset() + offset)     = r[source];
     }
 
     void execute( STD_Y, operand source, operand offset)
     {
-        ram[ get16( register_Y) + offset] = r[source];
+        ram( get16( register_Y) + offset)     = r[source];
     }
 
     void execute( LDS, operand destination)
     {
-        r[destination] = ram[fetch_instruction_word()];
+        r[destination] = ram( fetch_instruction_word())    ;
     }
 
     void increase16( operand reg)
@@ -343,7 +343,7 @@ public:
 
     void execute( LD_X, operand dest)
     {
-        r[dest] = ram[ get16( register_X)];
+        r[dest] = ram( get16( register_X))    ;
         extra_clocktick();
     }
 
@@ -361,7 +361,7 @@ public:
 
     void execute( POP, operand dest)
     {
-        r[dest] = ram[++sp];
+        r[dest] = ram( ++sp)    ;
     }
 
     void execute( STS, operand source)
@@ -371,7 +371,7 @@ public:
 
     void execute( STS_direct, operand source, operand address)
     {
-        ram[ address + get_rampd_offset()] = r[source];
+        ram( address + get_rampd_offset())     = r[source];
     }
 
     void execute( ST_Z_inc, operand source)
@@ -411,7 +411,7 @@ public:
 
     void execute( ST_X, operand source)
     {
-        ram[ get16( register_X) + get_rampx_offset()] = r[source];
+        ram( get16( register_X) + get_rampx_offset())     = r[source];
     }
 
     void execute( ST_X_dec, operand source)
@@ -422,7 +422,7 @@ public:
 
     void execute( PUSH, operand dest)
     {
-        ram[ sp--] = r[dest];
+        ram( sp--)     = r[dest];
     }
 
     void execute( COM, operand dest)
@@ -521,7 +521,7 @@ public:
     // 16-bit addressing scheme.
     pointer_t pop_address()
     {
-        pointer_t result = ram[sp+1] + (ram[sp+2] << 8);
+        pointer_t result = ram( sp+1)     + (ram( sp+2)     << 8);
         sp += 2;
         extra_clocktick();
         return result;
@@ -531,8 +531,8 @@ public:
     {
         if (sp > 1)
         {
-            ram[sp] = address >> 8;
-            ram[sp-1] = address;
+            ram( sp)     = address >> 8;
+            ram( sp-1)     = address;
             sp -= 2;
             extra_clockticks(2);
         }
@@ -753,6 +753,17 @@ public:
         }
     }
 
+    register_t &ram( pointer_t address)
+    {
+        return avr_state::ram[address];
+    }
+
+    const register_t &ram( pointer_t address) const
+    {
+        return avr_state::ram[address];
+    }
+
+
 private:
     void extra_clocktick()
     {
@@ -962,12 +973,12 @@ private:
 
     register_t &get_io_address( uint16_t address)
     {
-        return ram[address + io_offset];
+        return ram( address + io_offset)    ;
     }
 
     const register_t &get_io_address( uint16_t address) const
     {
-        return ram[address + io_offset];
+        return ram( address + io_offset)    ;
     }
 
     void set_io( operand address, register_t value)
@@ -990,6 +1001,7 @@ private:
     {
         return r[reg] + (static_cast<unsigned16>(r[reg+1]) << 8);
     }
+
 
 };
 

@@ -1,8 +1,29 @@
-/*
- * decoder.hpp
+//
+//  Copyright (C) 2011 Danny Havenith
+//
+//  Distributed under the Boost Software License, Version 1.0. (See
+//  accompanying file LICENSE_1_0.txt or copy at
+//  http://www.boost.org/LICENSE_1_0.txt)
+//
+
+/**
+ * Generic instruction decoder classes.
  *
- *  Created on: Jul 27, 2011
- *      Author: danny
+ * This file defines a template meta function:
+ * ~~~~{.cpp}
+ *     find_decoder< Implementation, InstructionSet>::type
+ * ~~~~
+ *
+ * This meta function defines a decoder that can recognize uint16_t words as
+ * being one of the instructions out of the InstructionSet and that can call
+ * an overload of the `execute()` member function on an instance of the class
+ * `Implementation`.
+ *
+ * The class `Implementation` can be an actual AVR core implementation, but
+ * also a disassembler or an instruction pre-compiler.
+ *
+ * @see find_decoder
+ *
  */
 
 #ifndef DECODER_HPP_
@@ -26,10 +47,20 @@ struct UNKNOWN_INSTRUCTION
 };
 
 /**
- * Special case of the instruction decoder that already knows the instruction, but now extracts operands from the instruction word and
- * calls the correct member function on an implementation.
+ * Final instruction decoder that calls an `execute()` overload with the right
+ * arguments.
+ *
+ * This instruction decoder already knows the instruction,
+ * but now extracts operands from the instruction word and calls the correct
+ * member function on an implementation.
+ *
+ * The correct member function will be `execute( instruction{}, args...)`
+ * the `instruction` type is used as a tag to tag-dispatch to the right overload
+ * of `execute()`.
  */
-template< typename instruction, typename operand_list = typename operands< instruction, instructions::avr_operands>::type, unsigned int operand_count = mpl::size< operand_list>::type::value>
+template< typename instruction,
+    typename operand_list = typename operands< instruction, instructions::avr_operands>::type,
+    unsigned int operand_count = mpl::size< operand_list>::type::value>
 struct operand_harvester
 {
 
@@ -37,7 +68,8 @@ struct operand_harvester
 
 
 /**
- * Specialization of the operand_harvester class for instructions with zero operands.
+ * Specialization of the operand_harvester class for instructions with zero
+ * operands.
  */
 template<typename instruction_tag, typename operand_list>
 struct operand_harvester<instruction_tag, operand_list, 0>
@@ -50,7 +82,8 @@ struct operand_harvester<instruction_tag, operand_list, 0>
 };
 
 /**
- * Specialization of the operand_harvester class for instructions with one operand.
+ * Specialization of the operand_harvester class for instructions with one
+ * operand.
  */
 template<typename instruction_tag, typename operand_list>
 struct operand_harvester<instruction_tag, operand_list, 1>
@@ -66,7 +99,9 @@ struct operand_harvester<instruction_tag, operand_list, 1>
 };
 
 /**
- */
+* Specialization of the operand_harvester class for instructions with two
+* operands.
+*/
 template<typename instruction_tag, typename operand_list>
 struct operand_harvester<instruction_tag, operand_list, 2>
 {
@@ -82,7 +117,8 @@ struct operand_harvester<instruction_tag, operand_list, 2>
 };
 
 /**
- * Special case of an instruction decoder that ignores the instruction word and calls the 'unknown instruction' implementation.
+ * Special case of an instruction decoder that ignores the instruction word
+ * and calls the 'unknown instruction' implementation.
  */
 struct unknown_instruction_caller
 {
