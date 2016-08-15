@@ -8,7 +8,8 @@ pre {
 #source {
     float: left;
     overflow: auto;
-    height: 100vh;
+    /*height: 100vh;*/
+    height: 100%;
     width: 100%;
     position: relative;
 }
@@ -127,9 +128,9 @@ td {
   {
       // Update registers
       var state = emulator.getState();
-      for (r = 0; r < state.r.size();++r)
+      for (r = 0; r < 32;++r)
       {
-          var value = state.r.get(r);
+          var value = emulator.getRam( r);
           var previousValue = previousRegisters[r];
           if (typeof  previousValue != 'undefined' && previousValue != value)
           {
@@ -140,7 +141,7 @@ td {
               $('#regR'+r).removeClass('changedRegister');
           }
           previousRegisters[r] = value;
-          displayNumberInRow('#regR'+r , state.r.get(r));  
+          displayNumberInRow('#regR'+r , value);  
       }
       
       // update flags

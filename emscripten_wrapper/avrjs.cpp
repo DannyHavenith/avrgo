@@ -85,7 +85,6 @@ EMSCRIPTEN_BINDINGS( avrjs) {
         .field("pc",            &avr_state::pc)
         .field("clockTicks",    &avr_state::clock_ticks)
         .field("ram",           &avr_state::ram)
-        .field("r",             &avr_state::r)
         .field("isSleeping",    &avr_state::is_sleeping)
         .field("flags",         &avr_state::flags)
         ;

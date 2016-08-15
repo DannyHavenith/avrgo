@@ -48,7 +48,7 @@ struct flags_t
 struct avr_state
 {
     avr_state( size_t ram_size)
-        : sp( ram_size -1), ram(ram_size), r(32)
+        : sp( ram_size -1), ram(ram_size)
     {}
 
     avr_state()
@@ -64,7 +64,6 @@ struct avr_state
     uint8_t         eind{}; // only available on 22-bit pc cores
     bool            is_sleeping{};
     flags_t         flags{};
-    std::vector<register_t>      r;
     unsigned int    clock_ticks{};
     pointer_t       pc{};
     pointer_t       sp{};
@@ -80,7 +79,6 @@ struct avr_core_utils
         return static_cast<int16_t>(static_cast<int8_t>( input));
     }
 };
-
 
 /**
  * Class that implements the core instruction set of the AVR microcontroller.
@@ -107,8 +105,6 @@ public:
     static constexpr bool is_22bit_pc = false;
     static constexpr int rampz_io_address = 0x3b;
 
-    // the following functions should become part of
-    // a ram-model aspect.
 
     void execute( NOP)
     {
@@ -118,10 +114,9 @@ public:
     void execute( MOVW, operand dest, operand source)
     {
         // move word
-        r[2*dest] = r[2*source];
-        r[2*dest + 1] = r[2*source + 1];
+        assign8( 2*dest, reg(2*source));
+        assign8( 2*dest + 1, reg(2*source + 1));
     }
-
 
     void execute( MULS, operand dest, operand source)
     {
@@ -154,25 +149,25 @@ public:
     {
         // ignore subtract results, change flags only
         auto previousZ = flags.Z;
-        subtract( r[dest], static_cast<unsigned16>(r[source]) + (flags.C?1:0));
+        subtract( reg(dest), static_cast<unsigned16>(reg(source)) + (flags.C?1:0));
         flags.Z = flags.Z and previousZ;
     }
 
     void execute( SBC, operand dest, operand source)
     {
         auto previousZ = flags.Z;
-        r[dest] = subtract( r[dest], static_cast<unsigned16>(r[source]) + (flags.C?1:0));
+        assign8( dest, subtract( reg(dest), static_cast<unsigned16>(reg(source)) + (flags.C?1:0)));
         flags.Z = flags.Z and previousZ;
     }
 
     void execute( ADD, operand dest, operand source)
     {
-        r[dest] = add( r[dest], r[source]);
+        assign8( dest, add( reg(dest), reg(source)));
     }
 
     void execute( CPSE, operand dest, operand source)
     {
-        if (r[dest] == r[source])
+        if (reg(dest) == reg(source))
         {
             skip();
         }
@@ -180,17 +175,17 @@ public:
 
     void execute( CP, operand dest, operand source)
     {
-        subtract( r[dest], r[source]);
+        subtract( reg(dest), reg(source));
     }
 
     void execute( SUB, operand dest, operand source)
     {
-        r[dest] = subtract( r[dest], r[source]);
+        assign8( dest, subtract( reg(dest), reg(source)));
     }
 
     void execute( ADC, operand dest, operand source)
     {
-        r[dest] = add( r[dest], flags.C?((unsigned16)(r[source]+1)):r[source]);
+        assign8( dest, add( reg(dest), flags.C?((unsigned16)(reg(source)+1)):reg(source)));
     }
 
     unsigned16 fetch_instruction_word()
@@ -201,84 +196,84 @@ public:
 
     void execute( AND, operand dest, operand source)
     {
-        r[dest] = set_logical_flags(r[dest] & r[source]);
+        assign8( dest, set_logical_flags(reg(dest) & reg(source)));
     }
 
     void execute( EOR, operand dest, operand source)
     {
-        r[dest] = set_logical_flags( r[dest] ^ r[source]);
+        assign8( dest, set_logical_flags( reg(dest) ^ reg(source)));
     }
 
     void execute( OR, operand dest, operand source)
     {
-        r[dest] = set_logical_flags( r[dest] | r[source]);
+        assign8( dest, set_logical_flags( reg(dest) | reg(source)));
     }
 
     void execute( MOV, operand dest, operand source)
     {
-        r[dest] = r[source];
+        assign8( dest, reg(source));
     }
 
     void execute( CPI, operand dest, operand constant)
     {
-        subtract( r[dest + 16], constant);
+        subtract( reg(dest + 16), constant);
     }
 
     void execute( SBCI, operand dest, operand constant)
     {
-        r[dest+16] = subtract( r[dest+16], flags.C?((unsigned16)(constant+1)):constant);
+        assign8( dest+16, subtract( reg(dest+16), flags.C?((unsigned16)(constant+1)):constant));
     }
 
     void execute( SUBI, operand dest, operand constant)
     {
-        r[dest+16] = subtract( r[dest+16], constant);
+        assign8( dest+16, subtract( reg(dest+16), constant));
     }
 
     void execute( ORI, operand dest, operand constant)
     {
-        r[dest] = set_logical_flags( r[dest] | constant);
+        assign8( dest, set_logical_flags( reg(dest) | constant));
     }
 
     void execute( ANDI, operand dest, operand constant)
     {
-        r[dest] = set_logical_flags( r[dest] & constant);
+        assign8( dest, set_logical_flags( reg(dest) & constant));
     }
 
     void execute( LDD_Y, operand dest, operand offset)
     {
-        r[dest] = ram( get16( register_Y) + offset)    ;
+        assign8( dest, ram( get16( register_Y) + offset)    );
         extra_clocktick();
     }
 
     void execute( LDD_Z, operand dest, operand offset)
     {
-        r[dest] = ram( get16( register_Z) + offset)    ;
+        assign8( dest, ram( get16( register_Z) + offset)    );
         extra_clocktick();
     }
 
     void execute( STD_Z, operand source, operand offset)
     {
-        ram( get16( register_Z) + get_rampz_offset() + offset)     = r[source];
+        ram( get16( register_Z) + get_rampz_offset() + offset)     = reg(source);
     }
 
     void execute( STD_Y, operand source, operand offset)
     {
-        ram( get16( register_Y) + offset)     = r[source];
+        ram( get16( register_Y) + offset)     = reg(source);
     }
 
     void execute( LDS, operand destination)
     {
-        r[destination] = ram( fetch_instruction_word())    ;
+        assign8( destination, ram( fetch_instruction_word())    );
     }
 
-    void increase16( operand reg)
+    void increase16( operand dest)
     {
-        assign16( reg, get16( reg) + 1);
+        assign16( dest, get16( dest) + 1);
     }
 
-    void decrease16( operand reg)
+    void decrease16( operand dest)
     {
-        assign16( reg, get16( reg) - 1);
+        assign16( dest, get16( dest) - 1);
     }
 
     void execute( LD_Z_inc, operand dest)
@@ -305,7 +300,7 @@ public:
 
     void execute( LPM_Z, operand dest)
     {
-        r[dest] = fetch_rom_byte( get16( register_Z));
+        assign8( dest, fetch_rom_byte( get16( register_Z)));
         extra_clockticks(2);
     }
 
@@ -317,7 +312,7 @@ public:
 
     void execute( ELPM_Z, operand dest)
     {
-        r[dest] = fetch_rom_byte( get16( register_Z) + get_rampz_offset());
+        assign8( dest, fetch_rom_byte( get16( register_Z) + get_rampz_offset()));
         extra_clockticks(2);
     }
 
@@ -331,19 +326,17 @@ public:
     {
         execute( LDD_Y(), dest, 0);
         increase16( register_Y);
-        extra_clocktick();
     }
 
     void execute( LD_Y_dec, operand dest)
     {
         decrease16( register_Y);
         execute( LDD_Y(), dest, 0);
-        extra_clocktick();
     }
 
     void execute( LD_X, operand dest)
     {
-        r[dest] = ram( get16( register_X))    ;
+        assign8( dest, ram( get16( register_X))    );
         extra_clocktick();
     }
 
@@ -361,7 +354,7 @@ public:
 
     void execute( POP, operand dest)
     {
-        r[dest] = ram( ++sp)    ;
+        assign8( dest, ram( ++sp));
     }
 
     void execute( STS, operand source)
@@ -371,7 +364,7 @@ public:
 
     void execute( STS_direct, operand source, operand address)
     {
-        ram( address + get_rampd_offset())     = r[source];
+        ram( address + get_rampd_offset())     = reg(source);
     }
 
     void execute( ST_Z_inc, operand source)
@@ -411,7 +404,7 @@ public:
 
     void execute( ST_X, operand source)
     {
-        ram( get16( register_X) + get_rampx_offset())     = r[source];
+        ram( get16( register_X) + get_rampx_offset())     = reg(source);
     }
 
     void execute( ST_X_dec, operand source)
@@ -422,37 +415,37 @@ public:
 
     void execute( PUSH, operand dest)
     {
-        ram( sp--)     = r[dest];
+        ram( sp--)     = reg(dest);
     }
 
     void execute( COM, operand dest)
     {
-        r[dest] = ~r[dest];
+        assign8( dest, ~reg(dest));
         flags.V = 0;
         flags.C = 0x80;
-        set_z_and_n( r[dest]);
+        set_z_and_n( reg(dest));
     }
 
     void execute( NEG, operand dest)
     {
-        register_t result = -r[dest];
+        register_t result = -reg(dest);
         set_z_and_n( result);
-        flags.V = r[dest] == 0x80;
+        flags.V = reg(dest) == 0x80;
         flags.C = result != 0;
-        flags.H = (result | r[dest]) & 0x80;
-        r[dest] = result;
+        flags.H = (result | reg(dest)) & 0x80;
+        assign8( dest, result);
     }
 
     void execute( SWAP, operand dest)
     {
-        r[dest] = (r[dest] >> 4) | (r[dest] << 4);
+        assign8( dest, (reg(dest) >> 4) | (reg(dest) << 4));
     }
 
     void execute( INC, operand dest)
     {
-        ++r[dest];
-        flags.V = r[dest] == 0x80;
-        set_z_and_n( r[dest]);
+        assign8( dest, reg(dest) +1);
+        flags.V = reg(dest) == 0x80;
+        set_z_and_n( reg(dest));
     }
 
     void execute( unk2)
@@ -461,39 +454,39 @@ public:
 
     void execute( ASR, operand dest)
     {
-        flags.C = (r[dest] & 0x01) << 7;
-        r[dest] = ((signed8)r[dest])/2;
-        set_z_and_n( r[dest]);
+        flags.C = (reg(dest) & 0x01) << 7;
+        assign8( dest, ((signed8)reg(dest))/2);
+        set_z_and_n( reg(dest));
         flags.V = flags.N ^ flags.C;
     }
 
     void execute( LSR, operand dest)
     {
-        flags.C = (r[dest] & 0x01) << 7;
-        r[dest] >>= 1;
-        set_z_and_n( r[dest]);
+        flags.C = (reg(dest) & 0x01) << 7;
+        assign8( dest, reg(dest) >> 1);
+        set_z_and_n( reg(dest));
         flags.V = flags.N ^ flags.C;
     }
 
     void execute( ROR, operand dest)
     {
 
-        unsigned8 result = r[dest] >> 1;
+        unsigned8 result = reg(dest) >> 1;
         if (flags.C)
         {
             result |= 0x80;
         }
-        flags.C = (r[dest] & 0x01) << 7;
+        flags.C = (reg(dest) & 0x01) << 7;
         set_z_and_n( result);
         flags.V = flags.N ^ flags.C;
-        r[dest] = result;
+        assign8( dest, result);
     }
 
     void execute( DEC, operand dest)
     {
-        --r[dest];
-        set_z_and_n( r[dest]);
-        flags.V = r[dest] == 0x7f;
+        assign8( dest, reg(dest) - 1);
+        set_z_and_n( reg(dest));
+        flags.V = reg(dest) == 0x7f;
     }
 
     void execute( BSET, operand bit)
@@ -638,7 +631,7 @@ public:
 
     void execute( ADIW, operand reg_pair, operand value)
     {
-        assign16( 2*reg_pair + 24, add16( r[2*reg_pair + 24], value));
+        assign16( 2*reg_pair + 24, add16( reg(2*reg_pair + 24), value));
         extra_clocktick();
     }
 
@@ -678,17 +671,17 @@ public:
 
     void execute( MUL, operand dest, operand source)
     {
-       assign16( 0, static_cast<uint16_t>( r[dest]) * r[source]);
+       assign16( 0, static_cast<uint16_t>( reg(dest)) * reg(source));
     }
 
     void execute( IN, operand dest, operand io_address)
     {
-        r[dest] = get_io( io_address);
+        assign8( dest, get_io( io_address));
     }
 
     void execute( OUT, operand ioaddr, operand source)
     {
-        set_io( ioaddr, r[source]);
+        set_io( ioaddr, reg(source));
     }
 
     void execute( RJMP, operand offset)
@@ -705,7 +698,7 @@ public:
 
     void execute( LDI, operand dest, operand constant)
     {
-        r[0x10 | dest] = constant;
+        assign8( 0x10 | dest, constant);
     }
 
     void execute( BRBS, operand offset, operand bit)
@@ -726,28 +719,28 @@ public:
         }
     }
 
-    void execute( BLD, operand reg, operand bit)
+    void execute( BLD, operand dest, operand bit)
     {
         const register_t mask = 1<<bit;
-        r[reg] = (r[reg] & ~mask) | ((flags.T)?mask:0);
+        assign8( dest, (reg(dest) & ~mask) | ((flags.T)?mask:0));
     }
 
-    void execute( BST, operand reg, operand bit)
+    void execute( BST, operand dest, operand bit)
     {
-        flags.T = r[reg] & ( 1<<bit);
+        flags.T = reg(dest) & ( 1<<bit);
     }
 
-    void execute( SBRC, operand reg, operand bit)
+    void execute( SBRC, operand dest, operand bit)
     {
-        if (not (r[reg]&(1<<bit)))
+        if (not (reg(dest)&(1<<bit)))
         {
             skip();
         }
     }
 
-    void execute( SBRS, operand reg, operand bit)
+    void execute( SBRS, operand dest, operand bit)
     {
-        if (r[reg] & (1<<bit))
+        if (reg(dest) & (1<<bit))
         {
             skip();
         }
@@ -755,14 +748,28 @@ public:
 
     register_t &ram( pointer_t address)
     {
-        return avr_state::ram[address];
+        return avr_state::ram.at(address);
     }
 
     const register_t &ram( pointer_t address) const
     {
-        return avr_state::ram[address];
+        return avr_state::ram.at(address);
     }
 
+    const register_t &reg( pointer_t dest) const
+    {
+        return avr_state::ram[dest];
+    }
+
+    register_t &reg_write( pointer_t dest)
+    {
+        return avr_state::ram[dest];
+    }
+
+    void assign8( operand dest, uint8_t value)
+    {
+        reg_write( dest) = value;
+    }
 
 private:
     void extra_clocktick()
@@ -926,7 +933,7 @@ private:
 
     unsigned16 unsigned_multiply( operand dest, operand source)
     {
-        unsigned16 result = r[dest+16] * r[source+16];
+        unsigned16 result = reg(dest+16) * reg(source+16);
         set_flags_after_multiply( result);
         extra_clocktick();
         return result;
@@ -934,7 +941,7 @@ private:
 
     signed16 signed_multiply( operand dest, operand source)
     {
-        signed16 result = signed_(r[dest+16]) * signed_(r[source+16]);
+        signed16 result = signed_(reg(dest+16)) * signed_(reg(source+16));
         set_flags_after_multiply( result);
         extra_clocktick();
         return result;
@@ -942,7 +949,7 @@ private:
 
     signed16 signed_unsigned_multiply( operand dest, operand source)
     {
-        boost::int16_t result = signed_( r[dest+16]) * r[source+16];
+        boost::int16_t result = signed_( reg(dest+16)) * reg(source+16);
         set_flags_after_multiply( result);
         extra_clocktick();
         return result;
@@ -991,17 +998,17 @@ private:
         return get_io_address( address);
     }
 
-    void assign16( operand reg, boost::int16_t value)
+    void assign16( operand dest, boost::int16_t value)
     {
-        r[reg] = value;
-        r[reg+1] = value >> 8;
+        reg_write(dest)   = value;
+        reg_write(dest+1) = value >> 8;
     }
 
-    unsigned16 get16( operand reg)
-    {
-        return r[reg] + (static_cast<unsigned16>(r[reg+1]) << 8);
-    }
 
+    unsigned16 get16( operand source)
+    {
+        return reg(source) + (static_cast<unsigned16>(reg(source+1)) << 8);
+    }
 
 };
 

@@ -137,14 +137,14 @@ public:
     }
 
 
-    register_t getRegister( int reg) const
+    register_t getRegister( int address) const
     {
-        return core::r[reg];
+        return core::reg(address);
     }
 
-    void setRegister( int reg, register_t val)
+    void setRegister( int address, register_t val)
     {
-        core::r[reg] = val;
+        core::assign8( address, val);
     }
 
     void setBreakpoint( pointer_t address)

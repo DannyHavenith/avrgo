@@ -110,14 +110,14 @@ namespace avrsim {
         }
 
 
-        register_t getRegister( int reg) const
+        register_t getRegister( int address) const
         {
-            return Core::r[reg];
+            return Core::reg(address);
         }
 
-        void setRegister( int reg, register_t val)
+        void setRegister( int address, register_t val)
         {
-            Core::r[reg] = val;
+            Core::assign8( address, val);
         }
 
         int getPc() const
