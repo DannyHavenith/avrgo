@@ -9,9 +9,10 @@ pre {
     float: left;
     overflow: auto;
     /*height: 100vh;*/
-    height: 100%;
+    height: 80%;
     width: 100%;
     position: relative;
+    border-style: inset;
 }
 
 #source pre:nth-child(odd)
@@ -23,14 +24,18 @@ pre {
     background-color: highlight !important;
 }
 
+#widgets {
+    background-color: lightblue;
+}
 
 .changedRegister {
     background-color: highlight;
 }
 
-#parent {
-    /* position: relative; */
+#emulator {
+    width: 100%;
 }
+
 #control {
     position:relative;
 }
@@ -43,31 +48,80 @@ pre {
     margin: 0;
 }
 .contains-sources {
-    width: 70%;
+    width: 65%;
+    margin-right: 5px;
 }
-.contains-controls {
+
+.contains-controls, .contains-controls table {
     width: 30%;
+    font-family: Helvetica,Arial,sans-serif;
+    font-size: small;
+    padding: 0;
 }
+
 .clear {
     clear:both;
 }
+
 td {
     text-align: right;
-    padding: 0 5;
+    padding: 0 5 0 0;
 }
 
-.registers td {
+.flags td {
     width:1em;
     text-align:center;
 }
+
+.registers td {
+    width: 10em;
+}
+
 </style>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script type="text/javascript">
+  var plots = [];
+  var maxPlots = 40;
+  var lastTickPlotted = 0;
+  
+  // specific to this demo, watch bit 4 in io port 8 (= ram address 0x28).
+  var ioToWatch = 0x20 + 8; 
+  var ioMask = 0x10;
+
   var emulator = {};
   var listing = {};
   var listingBackup = {};
+  
   var Module = {
     onRuntimeInitialized: function() {
+        
+        var layout = {
+          title: 'output',
+          xaxis: {
+              range:[0,maxPlots-1],
+              autorange:false,
+              autotick:false,
+              dtick: 1
+          },
+          yaxis: {
+              range:[0,1],
+              autorange:false,
+              autotick: false,
+              dtick: 1
+          }
+        };
+        
+        var trace = {
+                y: plots,
+                line: {shape: 'hv'},
+                mode: 'lines',
+                name: 'D.4'     
+        };
+        
+        TESTER = document.getElementById('scope');
+        Plotly.plot( TESTER, [trace], layout );
+        
         $.ajax( "ws2811.lss", { dataType:"text"})
             .done(function( data){ 
                 
@@ -98,7 +152,7 @@ td {
                 // run the emulator to the start of the interesting function.
                 emulator.setBreakpoint( 122);
                 emulator.run( 1000000); // run 1M ticks or until a breakpoint is hit.
-                emulator.setRam( 256, 42); // put an interesting byte at the front of the buffer
+                emulator.setRam( 256, 43); // put an interesting byte at the front of the buffer
                 
                 updateView();
             })
@@ -122,6 +176,28 @@ td {
           $( element + ' td:nth-child(2)').append( " (" + 2*number + ")");
           $( element + ' td:nth-child(3)').append( " (" + (2*number).toString(16)+")");
       }
+  }
+  
+  function updateChart( )
+  {
+      var currentTick = emulator.getState().clockTicks;
+      var deltaT = currentTick - lastTickPlotted;
+      var newValue = (emulator.getRam( ioToWatch) & ioMask)?1:0;
+      
+      if (deltaT > maxPlots) {
+          plots = [newValue];
+      }
+      else {
+          for (var count = 0; count < deltaT; ++count) {
+              if (plots.length >= maxPlots) {
+                  plots.shift();
+              }
+              plots.push( newValue);
+          }          
+      }
+
+      lastTickPlotted = currentTick;
+      Plotly.restyle( TESTER, {y:[plots]}, 0);
   }
   
   function updateView()
@@ -167,33 +243,53 @@ td {
           $('#L'+line).addClass('currentLine');
           $('#source').scrollTo('#L' + line, 10);
       }
+      
+      updateChart();
   }
   
   function singleStep()
   {
-      var value = +$('#steps').val();
-      if (isNaN( value) || value <1) value = 1;
+      var stepCount = +$('#steps').val();
+      if (isNaN( stepCount) || stepCount <1) stepCount = 1;
       
-      emulator.run(value);
+      emulator.run(stepCount);
       updateView();
   }
 </script>
   <script src="avrjs.js"></script>
+  <!-- Piwik -->
+<script type="text/javascript">
+  var _paq = _paq || [];
+  _paq.push(["setDomains", ["*.rurandom.org/justintime"]]);
+  _paq.push(['trackPageView']);
+  _paq.push(['enableLinkTracking']);
+  (function() {
+    var u="//rurandom.org/piwik/";
+    _paq.push(['setTrackerUrl', u+'piwik.php']);
+    _paq.push(['setSiteId', '1']);
+    var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+    g.type='text/javascript'; g.async=true; g.defer=true; g.src=u+'piwik.js'; s.parentNode.insertBefore(g,s);
+  })();
+</script>
+<noscript><p><img src="//rurandom.org/piwik/piwik.php?idsite=1" style="border:0;" alt="" /></p></noscript>
+<!-- End Piwik Code -->
+  
  </head>
  <body>
- <div id='parent'>
+ <div id='emulator'>
  <div id="left" class='width-set contains-sources'>
  <div id='source'></div>
  </div>
  <div id='right' class='width-set contains-controls'>
  <div id='control'>
-    <button name='step' id=step onClick='singleStep();'>Step</button><input type="text" id="steps" value="1"/>
-    <table class="registers">
+    <button name='step' id=step onClick='singleStep();'>Step</button>
+    <input type="text" id="steps" value="1" size="7"/>
+    <table class="flags">
         <tr>
         <td id='flag-C'>c</td><td id='flag-Z'>z</td><td id='flag-N'>n</td><td id='flag-V'>v</td><td id='flag-S'>s</td><td id='flag-H'>h</td><td id='flag-T'>t</td><td id='flag-I'>i</td>
         </tr>
     </table>
-    <table>
+    <table class='registers'>
         <tr><th>register</th><th>value</th><th>hex</th></tr>
         <tr id='clock'><td>clock</td><td/><td/></tr>
         <tr id='regPC'><td>PC</td><td/><td/></tr>
@@ -231,8 +327,14 @@ td {
         <tr id='regR31'><td>R31</td><td/><td/></tr>
     </table>
  </div>
+ <p>
+ This demonstration page was created using my own work-in-progress <a href='https://github.com/DannyHavenith/avrgo'>avrgo</a> AVR emulator, which was compiled into javascript using <a href='https://github.com/kripken/emscripten'>emscripten</a>
+ </p>
  </div>
  <div class='clear'></div>
+ </div>
+ <div id='widgets'>
+ <div id='scope' style="width:100%;height:250px;"></div>
  </div>
  </body>
 </html>

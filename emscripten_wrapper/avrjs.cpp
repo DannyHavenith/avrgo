@@ -6,6 +6,10 @@
 //  http://www.boost.org/LICENSE_1_0.txt)
 //
 
+/**
+ * This file defines the emscripten bindings for an emulator object.
+ */
+
 #include "emscripten/bind.h"
 #include "avrsim/avr_emulator.hpp"
 #include "avrsim/precompiled_emulator.hpp"
@@ -102,8 +106,5 @@ EMSCRIPTEN_BINDINGS( avrjs) {
         .function("setRegister",&emulator::setRegister)
         .function("setBreakpoint",  &emulator::setBreakpoint)
         .function("clearBreakpoint",&emulator::clearBreakpoint)
-
-        //    .property("x", &MyClass::getX, &MyClass::setX)
-        //    .class_function("getStringFromInstance", &MyClass::getStringFromInstance)
         ;
 }
