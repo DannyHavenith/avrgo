@@ -99,9 +99,10 @@ int main(int argc, char *argv[])
             emulator.fillRom( listing.rom);
             {
                 boost::timer::auto_cpu_timer t;
-                emulator.run( 100000000);
+                emulator.run( 1000000000); // run for 100M cycles
             }
             std::cout << "ready\n";
+            std::cout << emulator.getState().clock_ticks << '\n';
             return 0;
 
         }

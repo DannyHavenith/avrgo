@@ -31,9 +31,9 @@ namespace avrsim
     template<typename Core>
     struct precompiled_instruction
     {
-        precompiled_function<Core> *f;
         uint16_t arg1;
         uint16_t arg2;
+        precompiled_function<Core> *f;
     };
 
     template<
@@ -85,9 +85,9 @@ namespace avrsim
         void execute( Instruction, uint16_t arg1 = 0, uint16_t arg2 = 0)
         {
             result = {
-                &precompiled_function_implementation< Core, Instruction>::execute,
                 arg1,
-                arg2
+                arg2,
+                &precompiled_function_implementation< Core, Instruction>::execute
             };
         }
 

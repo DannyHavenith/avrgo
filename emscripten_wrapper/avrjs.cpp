@@ -106,5 +106,6 @@ EMSCRIPTEN_BINDINGS( avrjs) {
         .function("setRegister",&emulator::setRegister)
         .function("setBreakpoint",  &emulator::setBreakpoint)
         .function("clearBreakpoint",&emulator::clearBreakpoint)
+        .function("getClockTicks",  &emulator::getClockTicks)
         ;
 }

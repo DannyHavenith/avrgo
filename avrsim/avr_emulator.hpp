@@ -89,7 +89,7 @@ public:
      * If this function returns because of hitting a break point, it will
      * return true, otherwise it will return false.
      */
-    bool run(unsigned int clocks = 1)
+    bool run(size_t clocks = 1)
     {
         const auto clock_end = core::clock_ticks + clocks;
         bool result = false;

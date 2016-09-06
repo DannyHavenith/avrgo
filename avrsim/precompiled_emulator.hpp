@@ -130,6 +130,11 @@ namespace avrsim {
             Core::pc = pc;
         }
 
+        size_t getClockTicks() const
+        {
+            return Core::clock_ticks;
+        }
+
     private:
         using precompiled = precompiled_instruction<Core>;
         using precompiled_rom_t = std::vector< precompiled>;

@@ -1,5 +1,6 @@
 <html>
 <head>
+<title>Javascript AVR emulator demo</title>
 <style>
 pre {
     margin: .2em;
@@ -82,8 +83,8 @@ td {
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script type="text/javascript">
   var plots = [];
-  var maxPlots = 40;
-  var lastTickPlotted = 0;
+  var maxPlots = 80;
+  var lastPlotRecorded = 0;
   
   // specific to this demo, watch bit 4 in io port 8 (= ram address 0x28).
   var ioToWatch = 0x20 + 8; 
@@ -109,7 +110,14 @@ td {
               autorange:false,
               autotick: false,
               dtick: 1
-          }
+          },
+          margin: {
+              l: 20,
+              r: 20,
+              b: 30,
+              t: 30,
+              pad: 4
+            }
         };
         
         var trace = {
@@ -178,10 +186,17 @@ td {
       }
   }
   
-  function updateChart( )
+  function getCurrentClock()
   {
-      var currentTick = emulator.getState().clockTicks;
-      var deltaT = currentTick - lastTickPlotted;
+      return emulator.getClockTicks();
+  }
+  
+  function updatePlots()
+  {
+
+      var currentTick = getCurrentClock();
+      var deltaT = currentTick - lastPlotRecorded;
+      lastPlotRecorded = currentTick;
       var newValue = (emulator.getRam( ioToWatch) & ioMask)?1:0;
       
       if (deltaT > maxPlots) {
@@ -195,8 +210,11 @@ td {
               plots.push( newValue);
           }          
       }
-
-      lastTickPlotted = currentTick;
+  }
+  
+  function updateChart( )
+  {
+      updatePlots();
       Plotly.restyle( TESTER, {y:[plots]}, 0);
   }
   
@@ -244,15 +262,37 @@ td {
           $('#source').scrollTo('#L' + line, 10);
       }
       
+      
       updateChart();
   }
   
-  function singleStep()
+  
+  // run the emulator for the amount of steps that is filled in in input element '#steps'.
+  function runEmulator()
   {
       var stepCount = +$('#steps').val();
       if (isNaN( stepCount) || stepCount <1) stepCount = 1;
       
-      emulator.run(stepCount);
+      // make sure that we update the plot values for the last maxPlots steps, but
+      // run at full speed for all other clock ticks.
+      if (stepCount > maxPlots) {
+          plots = Array.apply(null, Array(maxPlots)).map(Number.prototype.valueOf,0);
+          if (emulator.run( stepCount - maxPlots)) {
+              // if we hit a breakpoint, don't single step afterwards and just clear the plots
+              stepCount = 0;
+          }
+          else {
+              stepCount = maxPlots;
+          }
+      }
+      
+      var targetTick = getCurrentClock() + stepCount;
+      
+      while (getCurrentClock() < targetTick) {
+          emulator.run(1);
+          updatePlots();
+      }
+          
       updateView();
   }
 </script>
@@ -276,13 +316,17 @@ td {
   
  </head>
  <body>
+ <div id='widgets'>
+ <div id='scope' style="width:100%;height:150px;"></div>
+ </div>
+ 
  <div id='emulator'>
  <div id="left" class='width-set contains-sources'>
  <div id='source'></div>
  </div>
  <div id='right' class='width-set contains-controls'>
  <div id='control'>
-    <button name='step' id=step onClick='singleStep();'>Step</button>
+    <button name='step' id=step onClick='runEmulator();'>Step</button>
     <input type="text" id="steps" value="1" size="7"/>
     <table class="flags">
         <tr>
@@ -332,9 +376,6 @@ td {
  </p>
  </div>
  <div class='clear'></div>
- </div>
- <div id='widgets'>
- <div id='scope' style="width:100%;height:250px;"></div>
  </div>
  </body>
 </html>
